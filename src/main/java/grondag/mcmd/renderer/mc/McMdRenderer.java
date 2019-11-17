@@ -8,8 +8,6 @@ import javax.annotation.Nullable;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.GlStateManager;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.client.font.FontStorage;
 import net.minecraft.client.font.Glyph;
 import net.minecraft.client.font.GlyphRenderer;
@@ -38,7 +36,7 @@ public interface McMdRenderer {
     char INDENT_MINUS = 'T';
 
     char NEWLINE  = 'n';
-    char HALF_NEWLINE  = 'h';
+    char NEWLINE_PLUS_HALF  = 'h';
 
     /** No closing tag - resets x coordinate to current indentation level. */
     char ALIGN_TO_INDENT = 'a';
@@ -61,7 +59,7 @@ public interface McMdRenderer {
 
     String ESC_ALIGN_TO_INDENT = ESC_STR + Character.toString(ALIGN_TO_INDENT);
     String ESC_NEWLINE = ESC_STR + Character.toString(NEWLINE);
-    String ESC_HALF_NEWLINE = ESC_STR + Character.toString(HALF_NEWLINE);
+    String ESC_HALF_NEWLINE = ESC_STR + Character.toString(NEWLINE_PLUS_HALF);
 
 
     String wrapMarkdownToWidth(String markdown, int width);
@@ -69,7 +67,7 @@ public interface McMdRenderer {
     boolean mcmd_rightToLeft();
     FontStorage mcmd_fontStorage();
     TextureManager mcmd_textureManager();
-    void mcmd_drawGlyph(GlyphRenderer glyphRenderer_1, boolean boolean_1, boolean boolean_2, float float_1, float float_2, float float_3, BufferBuilder bufferBuilder_1, float float_4, float float_5, float float_6, float float_7);
+    void mcmd_drawGlyph(GlyphRenderer glyphRenderer, boolean bold, boolean italic, float offset, float x, float y, BufferBuilder buffer, float red, float green, float blue, float alpha);
 
     default int mcmd_characterCountForWidth(String text, int width) {
         @SuppressWarnings("resource")
@@ -113,33 +111,33 @@ public interface McMdRenderer {
                         break;
 
                     case NEWLINE:
-                    case HALF_NEWLINE:
-                        return i;
+                    case NEWLINE_PLUS_HALF:
+                        return i + 1;
 
                     default:
                         break;
                 }
+            }
 
-                if (c == ' ') {
-                    lastSpace = i;
+            if (c == ' ') {
+                lastSpace = i;
+            }
+
+            if (w != 0.0F) {
+                singleOrEmpty = false;
+            }
+
+            w += me.getCharWidth(c);
+
+            if (boldCount > 0) {
+                ++w;
+            }
+
+            if (w + margin > width) {
+                if (singleOrEmpty) {
+                    ++i;
                 }
-
-                if (w != 0.0F) {
-                    singleOrEmpty = false;
-                }
-
-                w += me.getCharWidth(c);
-
-                if (boldCount > 0) {
-                    ++w;
-                }
-
-                if (w + margin > width) {
-                    if (singleOrEmpty) {
-                        ++i;
-                    }
-                    break;
-                }
+                break;
             }
         }
 
@@ -169,30 +167,29 @@ public interface McMdRenderer {
         return target;
     }
 
-    default float drawMarkdown(List<String> lines, float x, float y, int color) {
+    default float drawMarkdown(List<String> lines, float x, float y, int color, float yOffset, float height) {
         GlStateManager.enableAlphaTest();
 
         if (lines == null || lines.isEmpty()) {
             return 0;
         } else {
-
-            if ((color & -67108864) == 0) {
-                color |= -16777216;
+            if ((color & 0xFC000000) == 0) {
+                color |= 0xFF000000;
             }
 
-            return drawMarkdownInner(lines, x, y, color);
+            return drawMarkdownInner(lines, x, y, color, yOffset, height);
         }
     }
 
-    default float drawMarkdownInner(List<String> lines, float x, float y, int color) {
+    default float drawMarkdownInner(List<String> lines, float x, final float yIn, int color, float yOffset, float height) {
         @SuppressWarnings("resource")
         final TextRenderer me = ((TextRenderer)this);
         final boolean rightToLeft = mcmd_rightToLeft();
         final TextureManager textureManager = mcmd_textureManager();
         final FontStorage  fontStorage = mcmd_fontStorage();
         final float baseX = x;
-        final float baseRed = (color >> 16 & 255) / 255.0F;
-        final float baseGreen = (color >> 8 & 255) / 255.0F;
+        final float baseRed = ((color >> 16) & 255) / 255.0F;
+        final float baseGreen = ((color >> 8) & 255) / 255.0F;
         final float baseBlue = (color & 255) / 255.0F;
         final float red = baseRed;
         final float green = baseGreen;
@@ -200,6 +197,9 @@ public interface McMdRenderer {
         final float alpha = (color >> 24 & 255) / 255.0F;
         final Tessellator tess = Tessellator.getInstance();
         final BufferBuilder buff = tess.getBufferBuilder();
+        float y = yIn - yOffset;
+        final float yMax = yIn + height;
+
         Identifier lastGlyphTexture = null;
         buff.begin(7, VertexFormats.POSITION_UV_COLOR);
         int bold = 0;
@@ -208,10 +208,11 @@ public interface McMdRenderer {
         int strikethru = 0;
         int indent = 0;
         float margin = 0;
-        int lineHeight = me.fontHeight + 2;
-        final float indentWidth = fontStorage.getGlyph(' ').getAdvance() * 5;
+        final int singleLine = me.fontHeight + 2;
+        final int singleLinePlus = singleLine + (singleLine >> 1);
+        int lineHeight = singleLine;
+        final float indentWidth = fontStorage.getGlyph(' ').getAdvance() * 4;
         final List<Rectangle> rects = Lists.newArrayList();
-
         for (String text : lines) {
             if (rightToLeft) {
                 text = me.mirror(text);
@@ -271,48 +272,53 @@ public interface McMdRenderer {
                             break;
 
                         case NEWLINE:
-                            lineHeight = me.fontHeight + 2;
+                            lineHeight = singleLine;
                             break;
 
-                        case HALF_NEWLINE:
-                            lineHeight = (me.fontHeight + 2) >> 1;
+                        case NEWLINE_PLUS_HALF:
+                            lineHeight = singleLinePlus;
 
-                default:
-                    break;
+                        default:
+                            break;
                     }
                 }  else {
-                    final Glyph glyph = fontStorage.getGlyph(c);
-                    final GlyphRenderer glyphRenderer = fontStorage.getGlyphRenderer(c);
-                    final Identifier glyphTexture = glyphRenderer.getId();
+                    if (y >= yIn && y + lineHeight <= yMax) {
+                        final Glyph glyph = fontStorage.getGlyph(c);
+                        final GlyphRenderer glyphRenderer = fontStorage.getGlyphRenderer(c);
+                        final Identifier glyphTexture = glyphRenderer.getId();
 
-                    if (glyphTexture != null) {
-                        if (lastGlyphTexture != glyphTexture) {
-                            tess.draw();
-                            textureManager.bindTexture(glyphTexture);
-                            buff.begin(7, VertexFormats.POSITION_UV_COLOR);
-                            lastGlyphTexture = glyphTexture;
+                        if (glyphTexture != null) {
+                            if (lastGlyphTexture != glyphTexture) {
+                                tess.draw();
+                                textureManager.bindTexture(glyphTexture);
+                                buff.begin(7, VertexFormats.POSITION_UV_COLOR);
+                                lastGlyphTexture = glyphTexture;
+                            }
+
+                            final float  offset = bold > 0 ? glyph.getBoldOffset() : 0.0F;
+                            //TODO: remove
+                            if (blue != 0) {
+                                System.out.println(Integer.toHexString(color));
+                            }
+                            mcmd_drawGlyph(glyphRenderer, bold > 0, italic > 0, offset, margin + x, y, buff, red, green, blue, alpha);
                         }
 
-                        final float  offset = bold > 0 ? glyph.getBoldOffset() : 0.0F;
-                        mcmd_drawGlyph(glyphRenderer, bold > 0, italic > 0, offset, margin + x, y, buff, red, green, blue, alpha);
+                        final float advance = glyph.getAdvance(bold > 0);
+
+                        if (strikethru > 0) {
+                            rects.add(new Rectangle(margin + x - 1.0F, y + 4.5F, margin + x + advance, y + 4.5F - 1.0F, red, green, blue, alpha));
+                        }
+
+                        if (underline > 0) {
+                            rects.add(new Rectangle(margin + x - 1.0F, y + 9.0F, margin + x + advance, y + 9.0F - 1.0F, red, green, blue, alpha));
+                        }
+                        x += advance;
                     }
-
-                    final float advance = glyph.getAdvance(bold > 0);
-
-                    if (strikethru > 0) {
-                        rects.add(new Rectangle(margin + x - 1.0F, y + 4.5F, margin + x + advance, y + 4.5F - 1.0F, red, green, blue, alpha));
-                    }
-
-                    if (underline > 0) {
-                        rects.add(new Rectangle(margin + x - 1.0F, y + 9.0F, margin + x + advance, y + 9.0F - 1.0F, red, green, blue, alpha));
-                    }
-
-                    x += advance;
                 }
             }
 
             y += lineHeight;
-            lineHeight = me.fontHeight + 2;
+            lineHeight = singleLine;
             x = baseX;
         }
 
@@ -333,7 +339,6 @@ public interface McMdRenderer {
         return y;
     }
 
-    @Environment(EnvType.CLIENT)
     static class Rectangle {
         protected final float xMin;
         protected final float yMin;
@@ -344,22 +349,22 @@ public interface McMdRenderer {
         protected final float blue;
         protected final float alpha;
 
-        private Rectangle(float float_1, float float_2, float float_3, float float_4, float float_5, float float_6, float float_7, float float_8) {
-            xMin = float_1;
-            yMin = float_2;
-            xMax = float_3;
-            yMax = float_4;
-            red = float_5;
-            green = float_6;
-            blue = float_7;
-            alpha = float_8;
+        private Rectangle(float xMin, float yMin, float xMax, float yMax, float red, float green, float blue, float alpha) {
+            this.xMin = xMin;
+            this.yMin = yMin;
+            this.xMax = xMax;
+            this.yMax = yMax;
+            this.red = red;
+            this.green = green;
+            this.blue = blue;
+            this.alpha = alpha;
         }
 
-        public void draw(BufferBuilder bufferBuilder_1) {
-            bufferBuilder_1.vertex(xMin, yMin, 0.0D).color(red, green, blue, alpha).next();
-            bufferBuilder_1.vertex(xMax, yMin, 0.0D).color(red, green, blue, alpha).next();
-            bufferBuilder_1.vertex(xMax, yMax, 0.0D).color(red, green, blue, alpha).next();
-            bufferBuilder_1.vertex(xMin, yMax, 0.0D).color(red, green, blue, alpha).next();
+        public void draw(BufferBuilder buffer) {
+            buffer.vertex(xMin, yMin, 0.0D).color(red, green, blue, alpha).next();
+            buffer.vertex(xMax, yMin, 0.0D).color(red, green, blue, alpha).next();
+            buffer.vertex(xMax, yMax, 0.0D).color(red, green, blue, alpha).next();
+            buffer.vertex(xMin, yMax, 0.0D).color(red, green, blue, alpha).next();
         }
     }
 }

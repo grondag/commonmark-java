@@ -5,7 +5,6 @@ import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_BOLD_OFF;
 import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_HALF_NEWLINE;
 import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_ITALIC;
 import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_ITALIC_OFF;
-import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_NEWLINE;
 import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_OBFUSCATE;
 import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_OBFUSCATE_OFF;
 import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_STRIKETHROUGH;
@@ -107,7 +106,7 @@ public class CoreMcMdNodeRenderer extends AbstractVisitor implements NodeRendere
         textContent.write('«');
         visitChildren(blockQuote);
         textContent.write('»');
-        textContent.write(ESC_NEWLINE);
+        textContent.write(ESC_HALF_NEWLINE);
     }
 
     @Override
@@ -117,7 +116,7 @@ public class CoreMcMdNodeRenderer extends AbstractVisitor implements NodeRendere
         //        }
         listHolder = new BulletListHolder(listHolder, bulletList);
         visitChildren(bulletList);
-        textContent.write(ESC_NEWLINE);
+        textContent.write(ESC_HALF_NEWLINE);
         if (listHolder.getParent() != null) {
             listHolder = listHolder.getParent();
         } else {
@@ -139,19 +138,19 @@ public class CoreMcMdNodeRenderer extends AbstractVisitor implements NodeRendere
 
     @Override
     public void visit(HardLineBreak hardLineBreak) {
-        textContent.write(ESC_NEWLINE);
+        textContent.write(ESC_HALF_NEWLINE);
     }
 
     @Override
     public void visit(Heading heading) {
         visitChildren(heading);
-        textContent.write(ESC_NEWLINE);
+        textContent.write(ESC_HALF_NEWLINE);
     }
 
     @Override
     public void visit(ThematicBreak thematicBreak) {
         textContent.write("***");
-        textContent.write(ESC_NEWLINE);
+        textContent.write(ESC_HALF_NEWLINE);
     }
 
     @Override
@@ -207,7 +206,7 @@ public class CoreMcMdNodeRenderer extends AbstractVisitor implements NodeRendere
 
         listHolder = new OrderedListHolder(listHolder, orderedList);
         visitChildren(orderedList);
-        textContent.write(ESC_NEWLINE);
+        textContent.write(ESC_HALF_NEWLINE);
         if (listHolder.getParent() != null) {
             listHolder = listHolder.getParent();
         } else {
@@ -220,7 +219,7 @@ public class CoreMcMdNodeRenderer extends AbstractVisitor implements NodeRendere
         visitChildren(paragraph);
         // Add "end of line" only if its "root paragraph.
         if (paragraph.getParent() == null || paragraph.getParent() instanceof Document) {
-            textContent.write(ESC_NEWLINE);
+            textContent.write(ESC_HALF_NEWLINE);
         }
     }
 
