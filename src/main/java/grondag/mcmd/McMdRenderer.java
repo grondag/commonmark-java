@@ -64,7 +64,7 @@ public class McMdRenderer {
 
 	private final TextureManager textureManager = MinecraftClient.getInstance().getTextureManager();
 
-	private final GlyphDrawer glyphDrawer = new StandardDraw();
+	private final DrawHandler drawHandler;
 
 	public McMdRenderer(
 		TextRenderer baseRenderer,
@@ -76,6 +76,7 @@ public class McMdRenderer {
 		this.italicRenderer = italicRenderer;
 		this.boldRenderer = boldRenderer;
 		this.boldItalicRenderer = boldItalicRenderer;
+		drawHandler = new StandardHandler();
 	}
 
 	public int characterCountForWidth(String text, int width) {
@@ -173,23 +174,37 @@ public class McMdRenderer {
 		return target;
 	}
 
-	class StandardDraw implements GlyphDrawer {
-
-		@Override
-		public void draw(Glyph glyph, GlyphRenderer glyphRenderer, boolean bold, boolean italic, float x, float y, float height, BufferBuilder buffer, float red, float green, float blue, float alpha) {
-			glyphRenderer.draw(textureManager, italic, x, y, buffer, red, green, blue, alpha);
-			if (bold) {
-				glyphRenderer.draw(textureManager, italic, x + glyph.getBoldOffset(), y, buffer, red, green, blue, alpha);
-			}
-		}
+	public interface DrawHandler {
+		float draw(char c, boolean bold, boolean italic, float x, float y, float height, BufferBuilder buffer, float red, float green, float blue, float alpha);
 	}
 
-	@FunctionalInterface
-	public interface GlyphDrawer {
-		void draw(Glyph glyph, GlyphRenderer glyphRenderer, boolean bold, boolean italic, float x, float y, float height, BufferBuilder buffer, float red, float green, float blue, float alpha);
+	class StandardHandler implements DrawHandler {
+		final TextRendererExt me = ((TextRendererExt)baseRenderer);
+		final FontStorage  fontStorage = me.ext_fontStorage();
+		final Tessellator tess = Tessellator.getInstance();
 
-		default  void draw(Glyph glyph, GlyphRenderer glyphRenderer, boolean bold, boolean italic, float x, float y, BufferBuilder buffer, float red, float green, float blue, float alpha) {
-			draw(glyph, glyphRenderer, bold, italic, x, y, 9, buffer, red, green, blue, alpha);
+		@Override
+		public float draw(char c, boolean bold, boolean italic, float x, float y, float height, BufferBuilder buffer, float red, float green, float blue, float alpha) {
+			final Glyph glyph = fontStorage.getGlyph(c);
+			final GlyphRenderer glyphRenderer = fontStorage.getGlyphRenderer(c);
+			final Identifier glyphTexture = glyphRenderer.getId();
+			Identifier lastGlyphTexture = null;
+
+			if (glyphTexture != null) {
+				if (lastGlyphTexture != glyphTexture) {
+					tess.draw();
+					textureManager.bindTexture(glyphTexture);
+					buffer.begin(7, VertexFormats.POSITION_UV_COLOR);
+					lastGlyphTexture = glyphTexture;
+				}
+
+				glyphRenderer.draw(textureManager, italic, x, y, buffer, red, green, blue, alpha);
+				if (bold) {
+					glyphRenderer.draw(textureManager, italic, x + glyph.getBoldOffset(), y, buffer, red, green, blue, alpha);
+				}
+			}
+
+			return glyph.getAdvance(bold);
 		}
 	}
 
@@ -224,7 +239,6 @@ public class McMdRenderer {
 		float y = yIn - yOffset;
 		final float yMax = yIn + height;
 
-		Identifier lastGlyphTexture = null;
 		buff.begin(7, VertexFormats.POSITION_UV_COLOR);
 		int bold = 0;
 		int italic = 0;
@@ -305,22 +319,7 @@ public class McMdRenderer {
 				default:
 
 					if (y >= yIn && y + lineHeight <= yMax) {
-						final Glyph glyph = fontStorage.getGlyph(c);
-						final GlyphRenderer glyphRenderer = fontStorage.getGlyphRenderer(c);
-						final Identifier glyphTexture = glyphRenderer.getId();
-
-						if (glyphTexture != null) {
-							if (lastGlyphTexture != glyphTexture) {
-								tess.draw();
-								textureManager.bindTexture(glyphTexture);
-								buff.begin(7, VertexFormats.POSITION_UV_COLOR);
-								lastGlyphTexture = glyphTexture;
-							}
-
-							glyphDrawer.draw(glyph, glyphRenderer, bold > 0, italic > 0, margin + x, y, buff, red, green, blue, alpha);
-						}
-
-						final float advance = glyph.getAdvance(bold > 0);
+						final float advance = drawHandler.draw(c, bold > 0, italic > 0, margin + x, y, lineHeight, buff, red, green, blue, alpha);
 
 						if (strikethru > 0) {
 							rects.add(new Rectangle(margin + x, y + 4.5F, margin + x + advance, y + 4.5F - 1.0F, red, green, blue, alpha));
