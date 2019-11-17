@@ -7,55 +7,53 @@ package grondag.mcmd.node;
  */
 public interface Visitor {
 
-    void visit(BlockQuote blockQuote);
+	void visit(BlockQuote blockQuote);
 
-    void visit(BulletList bulletList);
+	void visit(BulletList bulletList);
 
-    void visit(Code code);
+	void visit(Code code);
 
-    void visit(Document document);
+	void visit(Document document);
 
-    void visit(Emphasis emphasis);
+	void visit(Emphasis emphasis);
 
-    void visit(FencedCodeBlock fencedCodeBlock);
+	void visit(FencedCodeBlock fencedCodeBlock);
 
-    void visit(HardLineBreak hardLineBreak);
+	void visit(HardLineBreak hardLineBreak);
 
-    void visit(Heading heading);
+	void visit(Heading heading);
 
-    void visit(ThematicBreak thematicBreak);
+	void visit(ThematicBreak thematicBreak);
 
-    void visit(HtmlInline htmlInline);
+	void visit(HtmlInline htmlInline);
 
-    void visit(HtmlBlock htmlBlock);
+	void visit(HtmlBlock htmlBlock);
 
-    void visit(Image image);
+	void visit(Image image);
 
-    void visit(IndentedCodeBlock indentedCodeBlock);
+	void visit(IndentedCodeBlock indentedCodeBlock);
 
-    void visit(Link link);
+	void visit(Link link);
 
-    void visit(ListItem listItem);
+	void visit(ListItem listItem);
 
-    void visit(OrderedList orderedList);
+	void visit(OrderedList orderedList);
 
-    void visit(Paragraph paragraph);
+	void visit(Paragraph paragraph);
 
-    void visit(SoftLineBreak softLineBreak);
+	void visit(SoftLineBreak softLineBreak);
 
-    void visit(StrongEmphasis strongEmphasis);
+	void visit(StrongEmphasis strongEmphasis);
 
-    void visit(Text text);
+	void visit(Text text);
 
-    void visit(Strikethrough strikethrough);
+	void visit(Strikethrough strikethrough);
 
-    void visit(Underline underline);
+	void visit(Underline underline);
 
-    void visit(LinkReferenceDefinition linkReferenceDefinition);
+	void visit(LinkReferenceDefinition linkReferenceDefinition);
 
-    void visit(CustomBlock customBlock);
+	void visit(CustomBlock customBlock);
 
-    void visit(CustomNode customNode);
-
-    void visit(Obfuscate obfuscate);
+	void visit(CustomNode customNode);
 }

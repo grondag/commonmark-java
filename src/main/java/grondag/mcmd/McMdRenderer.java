@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.GlStateManager;
 
 import grondag.fonthack.TextRendererExt;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.FontStorage;
 import net.minecraft.client.font.Glyph;
 import net.minecraft.client.font.GlyphRenderer;
@@ -22,88 +23,48 @@ import net.minecraft.util.Identifier;
 public class McMdRenderer {
 	//	char ESC = '§';
 	//
-	//	char BOLD = (char) 0xE000;
-	//	char STRIKETHROUGH = (char) 0xE001;
-	//	char UNDERLINE = (char) 0xE002;
-	//	char ITALIC = (char) 0xE003;
-	//	char INDENT_PLUS = (char) 0xE004;
-	//
-	//	char BOLD_OFF = (char) 0xE005;
-	//	char STRIKETHROUGH_OFF = (char) 0xE006;
-	//	char UNDERLINE_OFF = (char) 0xE007;
-	//	char ITALIC_OFF = (char) 0xE008;
-	//	char INDENT_MINUS = (char) 0xE009;
-	//
-	//	char NEWLINE  = (char) 0xE00A	;
-	//	char NEWLINE_PLUS_HALF  = (char) 0xE00B;
-	//
-	//	/** No closing tag - resets x coordinate to current indentation level. */
-	//	char ALIGN_TO_INDENT = (char) 0xE00C;
-	//
-	//	String STR_ESC = Character.toString(ESC);
-	//
-	//	String STR_BOLD = Character.toString(BOLD);
-	//	String STR_STRIKETHROUGH = Character.toString(STRIKETHROUGH);
-	//	String STR_UNDERLINE = Character.toString(UNDERLINE);
-	//	String STR_ITALIC = Character.toString(ITALIC);
-	//	String STR_INDENT_PLUS = Character.toString(INDENT_PLUS);
-	//
-	//	String STR_BOLD_OFF = Character.toString(BOLD_OFF);
-	//	String STR_STRIKETHROUGH_OFF = Character.toString(STRIKETHROUGH_OFF);
-	//	String STR_UNDERLINE_OFF = Character.toString(UNDERLINE_OFF);
-	//	String STR_ITALIC_OFF = Character.toString(ITALIC_OFF);
-	//	String STR_INDENT_MINUS = Character.toString(INDENT_MINUS);
-	//
-	//	String STR_ALIGN_TO_INDENT = Character.toString(ALIGN_TO_INDENT);
-	//	String STR_NEWLINE = Character.toString(NEWLINE);
-	//	String STR_HALF_NEWLINE = Character.toString(NEWLINE_PLUS_HALF);
+	public static final char BOLD = (char) 0xE000;
+	public static final char STRIKETHROUGH = (char) 0xE001;
+	public static final char UNDERLINE = (char) 0xE002;
+	public static final char ITALIC = (char) 0xE003;
+	public static final char INDENT_PLUS = (char) 0xE004;
 
-	public static final char ESC = '§';
+	public static final char BOLD_OFF = (char) 0xE005;
+	public static final char STRIKETHROUGH_OFF = (char) 0xE006;
+	public static final char UNDERLINE_OFF = (char) 0xE007;
+	public static final char ITALIC_OFF = (char) 0xE008;
+	public static final char INDENT_MINUS = (char) 0xE009;
 
-	public static final char OBFUSCATE = 'o';
-	public static final char BOLD = 'b';
-	public static final char STRIKETHROUGH = 's';
-	public static final char UNDERLINE = 'u';
-	public static final char ITALIC = 'i';
-	public static final char INDENT_PLUS = 't';
-
-	public static final char OBFUSCATE_OFF = 'O';
-	public static final char BOLD_OFF = 'B';
-	public static final char STRIKETHROUGH_OFF = 'S';
-	public static final char UNDERLINE_OFF = 'U';
-	public static final char ITALIC_OFF = 'I';
-	public static final char INDENT_MINUS = 'T';
-
-	public static final char NEWLINE  = 'n';
-	public static final char NEWLINE_PLUS_HALF  = 'h';
+	public static final char NEWLINE  = (char) 0xE00A	;
+	public static final char NEWLINE_PLUS_HALF  = (char) 0xE00B;
 
 	/** No closing tag - resets x coordinate to current indentation level. */
-	public static final char ALIGN_TO_INDENT = 'a';
+	public static final char ALIGN_TO_INDENT = (char) 0xE00C;
 
-	public static final String ESC_STR = Character.toString(ESC);
+	public static final String STR_BOLD = Character.toString(BOLD);
+	public static final String STR_STRIKETHROUGH = Character.toString(STRIKETHROUGH);
+	public static final String STR_UNDERLINE = Character.toString(UNDERLINE);
+	public static final String STR_ITALIC = Character.toString(ITALIC);
+	public static final String STR_INDENT_PLUS = Character.toString(INDENT_PLUS);
 
-	public static final String ESC_BOLD = ESC_STR + Character.toString(BOLD);
-	public static final String ESC_STRIKETHROUGH = ESC_STR + Character.toString(STRIKETHROUGH);
-	public static final String ESC_UNDERLINE = ESC_STR + Character.toString(UNDERLINE);
-	public static final String ESC_ITALIC = ESC_STR + Character.toString(ITALIC);
-	public static final String ESC_OBFUSCATE = ESC_STR + Character.toString(OBFUSCATE);
-	public static final String ESC_INDENT_PLUS = ESC_STR + Character.toString(INDENT_PLUS);
+	public static final String STR_BOLD_OFF = Character.toString(BOLD_OFF);
+	public static final String STR_STRIKETHROUGH_OFF = Character.toString(STRIKETHROUGH_OFF);
+	public static final String STR_UNDERLINE_OFF = Character.toString(UNDERLINE_OFF);
+	public static final String STR_ITALIC_OFF = Character.toString(ITALIC_OFF);
+	public static final String STR_INDENT_MINUS = Character.toString(INDENT_MINUS);
 
-	public static final String ESC_BOLD_OFF = ESC_STR + Character.toString(BOLD_OFF);
-	public static final String ESC_STRIKETHROUGH_OFF = ESC_STR + Character.toString(STRIKETHROUGH_OFF);
-	public static final String ESC_UNDERLINE_OFF = ESC_STR + Character.toString(UNDERLINE_OFF);
-	public static final String ESC_ITALIC_OFF = ESC_STR + Character.toString(ITALIC_OFF);
-	public static final String ESC_OBFUSCATE_OFF = ESC_STR + Character.toString(OBFUSCATE_OFF);
-	public static final String ESC_INDENT_MINUS = ESC_STR + Character.toString(INDENT_MINUS);
-
-	public static final String ESC_ALIGN_TO_INDENT = ESC_STR + Character.toString(ALIGN_TO_INDENT);
-	public static final String ESC_NEWLINE = ESC_STR + Character.toString(NEWLINE);
-	public static final String ESC_HALF_NEWLINE = ESC_STR + Character.toString(NEWLINE_PLUS_HALF);
+	public static final String STR_ALIGN_TO_INDENT = Character.toString(ALIGN_TO_INDENT);
+	public static final String STR_NEWLINE = Character.toString(NEWLINE);
+	public static final String STR_HALF_NEWLINE = Character.toString(NEWLINE_PLUS_HALF);
 
 	private final TextRenderer baseRenderer;
 	private final TextRenderer italicRenderer;
 	private final TextRenderer boldRenderer;
 	private final TextRenderer boldItalicRenderer;
+
+	private final TextureManager textureManager = MinecraftClient.getInstance().getTextureManager();
+
+	private final GlyphDrawer glyphDrawer = new StandardDraw();
 
 	public McMdRenderer(
 		TextRenderer baseRenderer,
@@ -115,11 +76,6 @@ public class McMdRenderer {
 		this.italicRenderer = italicRenderer;
 		this.boldRenderer = boldRenderer;
 		this.boldItalicRenderer = boldItalicRenderer;
-	}
-
-	public String wrapMarkdownToWidth(String markdown, int width) {
-		// TODO
-		return "";
 	}
 
 	public int characterCountForWidth(String text, int width) {
@@ -136,42 +92,40 @@ public class McMdRenderer {
 		for(boolean singleOrEmpty = true; i < len; ++i) {
 			final char c = text.charAt(i);
 
-			if (c == ESC && i + 1 < text.length()) {
-				switch(text.charAt(++i)) {
-				case BOLD:
-					++boldCount;
-					break;
+			switch(c) {
+			case BOLD:
+				++boldCount;
+				break;
 
-				case BOLD_OFF:
-					--boldCount;
-					break;
+			case BOLD_OFF:
+				--boldCount;
+				break;
 
-				case INDENT_PLUS:
-					++indent;
-					margin = indent * indentWidth;
-					break;
+			case INDENT_PLUS:
+				++indent;
+				margin = indent * indentWidth;
+				break;
 
-				case INDENT_MINUS:
-					--indent;
-					margin = indent * indentWidth;
-					break;
+			case INDENT_MINUS:
+				--indent;
+				margin = indent * indentWidth;
+				break;
 
-				case ALIGN_TO_INDENT:
-					//because margin is always added, resetting to margin is resetting to zero
-					w = 0;
-					break;
+			case ALIGN_TO_INDENT:
+				//because margin is always added, resetting to margin is resetting to zero
+				w = 0;
+				break;
 
-				case NEWLINE:
-				case NEWLINE_PLUS_HALF:
-					return i + 1;
+			case NEWLINE:
+			case NEWLINE_PLUS_HALF:
+				return i + 1;
 
-				default:
-					break;
-				}
-			}
-
-			if (c == ' ') {
+			case ' ':
 				lastSpace = i;
+				break;
+
+			default:
+				break;
 			}
 
 			if (w != 0.0F) {
@@ -201,6 +155,7 @@ public class McMdRenderer {
 		}
 
 		String line;
+
 		for(; !markdown.isEmpty(); target.add(line)) {
 			final int lineWidth = characterCountForWidth(markdown, width);
 
@@ -218,11 +173,23 @@ public class McMdRenderer {
 		return target;
 	}
 
-	public void drawGlyph(GlyphRenderer glyphRenderer, boolean bold, boolean italic, float offset, float x, float y, BufferBuilder buffer, float red, float green, float blue, float alpha) {
-		final TextureManager tm = ((TextRendererExt) baseRenderer).ext_textureManager();
-		glyphRenderer.draw(tm, italic, x, y, buffer, red, green, blue, alpha);
-		if (bold) {
-			glyphRenderer.draw(tm, italic, x + offset, y, buffer, red, green, blue, alpha);
+	class StandardDraw implements GlyphDrawer {
+
+		@Override
+		public void draw(Glyph glyph, GlyphRenderer glyphRenderer, boolean bold, boolean italic, float x, float y, float height, BufferBuilder buffer, float red, float green, float blue, float alpha) {
+			glyphRenderer.draw(textureManager, italic, x, y, buffer, red, green, blue, alpha);
+			if (bold) {
+				glyphRenderer.draw(textureManager, italic, x + glyph.getBoldOffset(), y, buffer, red, green, blue, alpha);
+			}
+		}
+	}
+
+	@FunctionalInterface
+	public interface GlyphDrawer {
+		void draw(Glyph glyph, GlyphRenderer glyphRenderer, boolean bold, boolean italic, float x, float y, float height, BufferBuilder buffer, float red, float green, float blue, float alpha);
+
+		default  void draw(Glyph glyph, GlyphRenderer glyphRenderer, boolean bold, boolean italic, float x, float y, BufferBuilder buffer, float red, float green, float blue, float alpha) {
+			draw(glyph, glyphRenderer, bold, italic, x, y, 9, buffer, red, green, blue, alpha);
 		}
 	}
 
@@ -243,7 +210,6 @@ public class McMdRenderer {
 	public void drawMarkdownInner(List<String> lines, float x, final float yIn, int color, float yOffset, float height) {
 		final TextRendererExt me = ((TextRendererExt)baseRenderer);
 		final boolean rightToLeft = baseRenderer.isRightToLeft();
-		final TextureManager textureManager = me.ext_textureManager();
 		final FontStorage  fontStorage = me.ext_fontStorage();
 		final float baseX = x;
 		final float baseRed = ((color >> 16) & 255) / 255.0F;
@@ -279,67 +245,65 @@ public class McMdRenderer {
 			for(int i = 0; i < text.length(); ++i) {
 				final char c = text.charAt(i);
 
-				if (c == ESC && i + 1 < text.length()) {
-					switch(text.charAt(++i)) {
+				switch(c) {
 
-					case BOLD:
-						++bold;
-						break;
+				case BOLD:
+					++bold;
+					break;
 
-					case BOLD_OFF:
-						--bold;
-						break;
+				case BOLD_OFF:
+					--bold;
+					break;
 
-					case STRIKETHROUGH:
-						++strikethru;
-						break;
+				case STRIKETHROUGH:
+					++strikethru;
+					break;
 
-					case STRIKETHROUGH_OFF:
-						--strikethru;
-						break;
+				case STRIKETHROUGH_OFF:
+					--strikethru;
+					break;
 
-					case UNDERLINE:
-						++underline;
-						break;
+				case UNDERLINE:
+					++underline;
+					break;
 
-					case UNDERLINE_OFF:
-						--underline;
-						break;
+				case UNDERLINE_OFF:
+					--underline;
+					break;
 
-					case ITALIC:
-						++italic;
-						break;
+				case ITALIC:
+					++italic;
+					break;
 
-					case ITALIC_OFF:
-						--italic;
-						break;
+				case ITALIC_OFF:
+					--italic;
+					break;
 
-					case INDENT_PLUS:
-						++indent;
-						margin = indent * indentWidth * (baseRenderer.isRightToLeft() ? -1 : 1);
-						break;
+				case INDENT_PLUS:
+					++indent;
+					margin = indent * indentWidth * (baseRenderer.isRightToLeft() ? -1 : 1);
+					break;
 
-					case INDENT_MINUS:
-						--indent;
-						margin = indent * indentWidth * (baseRenderer.isRightToLeft() ? -1 : 1);
-						break;
+				case INDENT_MINUS:
+					--indent;
+					margin = indent * indentWidth * (baseRenderer.isRightToLeft() ? -1 : 1);
+					break;
 
-					case ALIGN_TO_INDENT:
-						//because margin is always added, resetting to margin is resetting to base
-						x = baseX;
-						break;
+				case ALIGN_TO_INDENT:
+					//because margin is always added, resetting to margin is resetting to base
+					x = baseX;
+					break;
 
-					case NEWLINE:
-						lineHeight = singleLine;
-						break;
+				case NEWLINE:
+					lineHeight = singleLine;
+					break;
 
-					case NEWLINE_PLUS_HALF:
-						lineHeight = singleLinePlus;
+				case NEWLINE_PLUS_HALF:
+					lineHeight = singleLinePlus;
+					break;
 
-					default:
-						break;
-					}
-				}  else {
+				default:
+
 					if (y >= yIn && y + lineHeight <= yMax) {
 						final Glyph glyph = fontStorage.getGlyph(c);
 						final GlyphRenderer glyphRenderer = fontStorage.getGlyphRenderer(c);
@@ -353,8 +317,7 @@ public class McMdRenderer {
 								lastGlyphTexture = glyphTexture;
 							}
 
-							final float  offset = bold > 0 ? glyph.getBoldOffset() : 0.0F;
-							drawGlyph(glyphRenderer, bold > 0, italic > 0, offset, margin + x, y, buff, red, green, blue, alpha);
+							glyphDrawer.draw(glyph, glyphRenderer, bold > 0, italic > 0, margin + x, y, buff, red, green, blue, alpha);
 						}
 
 						final float advance = glyph.getAdvance(bold > 0);
@@ -405,19 +368,18 @@ public class McMdRenderer {
 			for(int i = 0; i < text.length(); ++i) {
 				final char c = text.charAt(i);
 
-				if (c == ESC && i + 1 < text.length()) {
-					switch(text.charAt(++i)) {
+				switch(c) {
 
-					case NEWLINE:
-						lineHeight = singleLine;
-						break;
+				case NEWLINE:
+					lineHeight = singleLine;
+					break;
 
-					case NEWLINE_PLUS_HALF:
-						lineHeight = singleLinePlus;
+				case NEWLINE_PLUS_HALF:
+					lineHeight = singleLinePlus;
+					break;
 
-					default:
-						break;
-					}
+				default:
+					break;
 				}
 			}
 
