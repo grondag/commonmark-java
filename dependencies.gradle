@@ -1,46 +1,25 @@
 repositories {
     mavenLocal();
     jcenter();
-    //maven { url "https://tehnut.info/maven"}
-    //maven { url "http://maven.sargunv.s3-website-us-west-2.amazonaws.com/" }
-    //maven { url "https://minecraft.curseforge.com/api/maven" }
     maven { url "https://maven.fabricmc.net/" }
-    //maven { url "https://maven.jamieswhiteshirt.com/libs-release/"}
-    maven {
-		name = "JitPack"
-		url = "https://jitpack.io"
-	}
- 	maven {
+ 	  maven {
     	name = "grondag"
     	url = "https://grondag-repo.appspot.com"
     	credentials {
             username "guest"
             password ""
-		}
+		  }
     }
 }
 
 dependencies {
 	minecraft "com.mojang:minecraft:${minecraft_version}"
 	mappings "net.fabricmc:yarn:${yarn_mappings}"
-	
+
 	modApi "net.fabricmc:fabric-loader:${loader_version}"
 	modApi "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
-	
+
 	// dev env annotation support
 	compileOnly "org.apiguardian:apiguardian-api:1.0.0"
 	compileOnly "com.google.code.findbugs:jsr305:3.0.2"
-	
-	modApi("io.github.prospector:modmenu:${modmenu_version}") { transitive = false }
-	
-	modImplementation ("grondag:fermion-${project.mc_tag}:${project.fermion_version}.+") { transitive = false }
-    include "grondag:fermion-${project.mc_tag}:${project.fermion_version}.+"
-    
-    modImplementation ("grondag:fermion-varia-${project.mc_tag}:${project.fermion_varia_version}.+") { transitive = false }
-    include "grondag:fermion-varia-${project.mc_tag}:${project.fermion_varia_version}.+"
-	
-	modImplementation ("com.github.Ladysnake:Satin:${satin_version}") { transitive = false }
-    include "com.github.Ladysnake:Satin:${satin_version}"
-    
-	modImplementation ("me.shedaniel:RoughlyEnoughItems:${project.rei_version}") { exclude(module: "ModMenu") }
 }

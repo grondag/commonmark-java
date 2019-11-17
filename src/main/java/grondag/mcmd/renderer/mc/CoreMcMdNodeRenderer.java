@@ -1,21 +1,22 @@
 package grondag.mcmd.renderer.mc;
 
-import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_BOLD;
-import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_BOLD_OFF;
-import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_HALF_NEWLINE;
-import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_ITALIC;
-import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_ITALIC_OFF;
-import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_OBFUSCATE;
-import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_OBFUSCATE_OFF;
-import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_STRIKETHROUGH;
-import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_STRIKETHROUGH_OFF;
-import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_UNDERLINE;
-import static grondag.mcmd.renderer.mc.McMdRenderer.ESC_UNDERLINE_OFF;
+import static grondag.mcmd.McMdRenderer.ESC_BOLD;
+import static grondag.mcmd.McMdRenderer.ESC_BOLD_OFF;
+import static grondag.mcmd.McMdRenderer.ESC_HALF_NEWLINE;
+import static grondag.mcmd.McMdRenderer.ESC_ITALIC;
+import static grondag.mcmd.McMdRenderer.ESC_ITALIC_OFF;
+import static grondag.mcmd.McMdRenderer.ESC_OBFUSCATE;
+import static grondag.mcmd.McMdRenderer.ESC_OBFUSCATE_OFF;
+import static grondag.mcmd.McMdRenderer.ESC_STRIKETHROUGH;
+import static grondag.mcmd.McMdRenderer.ESC_STRIKETHROUGH_OFF;
+import static grondag.mcmd.McMdRenderer.ESC_UNDERLINE;
+import static grondag.mcmd.McMdRenderer.ESC_UNDERLINE_OFF;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import grondag.mcmd.McMdRenderer;
 import grondag.mcmd.internal.renderer.mc.BulletListHolder;
 import grondag.mcmd.internal.renderer.mc.ListHolder;
 import grondag.mcmd.internal.renderer.mc.OrderedListHolder;

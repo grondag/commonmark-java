@@ -1,6 +1,6 @@
 package grondag.mcmd.internal.renderer.mc;
 
-import grondag.mcmd.renderer.mc.McMdRenderer;
+import grondag.mcmd.McMdRenderer;
 
 public abstract class ListHolder {
     private final ListHolder parent;

@@ -1,0 +1,44 @@
+{
+	"schemaVersion": 1,
+	"id": "mcmarkdown",
+	"version": "${version}",
+	"name": "MC Markdown",
+	"description": "Library for parsing and rendering Markdown in-game.",
+	"authors": [
+		{
+			"name": "Grondag",
+			"contact": {
+				"github": "https://github.com/grondag"
+			}
+		}
+	],
+	"contributors": [
+	],
+	"contact": {
+		"homepage": "https://github.com/grondag/mcmarkdown",
+		"sources": "https://github.com/grondag/mcmarkdown"
+	},
+	"license": "BSD",
+	"icon": "assets/mcmd/md_icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"grondag.mcmd.McMdClient"
+		]
+	},
+	"mixins": [
+	  {
+	  	  "config": "mcmd.client.json",
+	      "environment": "client"
+	  }
+    ],
+   
+	"depends": {
+		"fabricloader": ">=0.4.0",
+		"fabric": "*"
+	},
+	"custom": {
+    	"modmenu:api": true,
+    	"modmenu:clientsideOnly": true
+  	}
+}
