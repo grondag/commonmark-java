@@ -26,13 +26,6 @@
 			"grondag.mcmd.McMdClient"
 		]
 	},
-	"mixins": [
-	  {
-	  	  "config": "mcmd.client.json",
-	      "environment": "client"
-	  }
-    ],
-   
 	"depends": {
 		"fabricloader": ">=0.4.0",
 		"fabric": "*"
