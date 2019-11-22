@@ -5,23 +5,20 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import org.lwjgl.opengl.GL11;
-
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.GlStateManager;
 
 import grondag.fonthack.ext.RenderableGlyphExt;
 import grondag.fonthack.ext.TextRendererExt;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.FontStorage;
 import net.minecraft.client.font.Glyph;
 import net.minecraft.client.font.GlyphRenderer;
+import net.minecraft.client.font.GlyphRenderer.Rectangle;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexFormats;
-import net.minecraft.client.texture.AbstractTexture;
-import net.minecraft.client.texture.TextureManager;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.util.Identifier;
 
 public class McMdRenderer {
@@ -66,20 +63,19 @@ public class McMdRenderer {
 
 	private final TextRenderer baseRenderer;
 
-	private final TextureManager textureManager = MinecraftClient.getInstance().getTextureManager();
-
 	private final FontAdapter adapter;
 	private final List<Rectangle> rects = Lists.newArrayList();
+	protected final FontStorage fontStorage;
 
 	final McMdStyle style;
 
 	public McMdRenderer(
-		McMdStyle style,
-		TextRenderer baseRenderer)
+			McMdStyle style,
+			TextRenderer baseRenderer)
 	{
 		this.style = style;
 		this.baseRenderer = baseRenderer;
-
+		fontStorage = ((TextRendererExt) baseRenderer).ext_fontStorage();
 		//		adapter = ((TextRendererExt) baseRenderer).ext_fontStorage().getGlyph('a') instanceof RenderableGlyphExt
 		//			? new TrueTypeAdapter() : new StandardAdapter();
 
@@ -211,11 +207,10 @@ public class McMdRenderer {
 
 	abstract class FontAdapter {
 		final Tessellator tess = Tessellator.getInstance();
-		protected final FontStorage  fontStorage = ((TextRendererExt) baseRenderer).ext_fontStorage();
 		final float indentWidth = ((TextRendererExt) baseRenderer).ext_fontStorage().getGlyph(' ').getAdvance() * 5;
 		protected Identifier lastGlyphTexture = null;
 
-		abstract float draw(char c, char kernChar, boolean bold, boolean italic, float x, float y, float height, BufferBuilder buffer, float red, float green, float blue, float alpha);
+		abstract float draw(char c, char kernChar, boolean bold, boolean italic, float x, float y, float height, Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, float red, float green, float blue, float alpha, int light);
 
 		protected abstract float getCharWidth(char kernChar, char c, boolean bold, boolean italic, float height);
 
@@ -231,26 +226,30 @@ public class McMdRenderer {
 	class StandardAdapter extends FontAdapter {
 
 		@Override
-		public float draw(char c, char kernChar, boolean bold, boolean italic, float x, float y, float height, BufferBuilder buffer, float red, float green, float blue, float alpha) {
+		public float draw(char c, char kernChar, boolean bold, boolean italic, float x, float y, float height, Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, float red, float green, float blue, float alpha, int light) {
+
+
+			//TODO: will need a custom renderlayer here to get correct blending
 			final Glyph glyph = fontStorage.getGlyph(c);
 			final GlyphRenderer glyphRenderer = fontStorage.getGlyphRenderer(c);
-			final Identifier glyphTexture = glyphRenderer.getId();
+			final VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(glyphRenderer.method_24045(false));
+			//			final Identifier glyphTexture = glyphRenderer.getId();
 
-			if (glyphTexture != null) {
-				if (lastGlyphTexture != glyphTexture) {
-					tess.draw();
-					textureManager.bindTexture(glyphTexture);
-					((AbstractTexture)textureManager.getTexture(glyphTexture)).setFilter(true, true);
-					GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR_MIPMAP_LINEAR);
-					buffer.begin(7, VertexFormats.POSITION_UV_COLOR);
-					lastGlyphTexture = glyphTexture;
-				}
+			//			if (glyphTexture != null) {
+			//				if (lastGlyphTexture != glyphTexture) {
+			//					tess.draw();
+			//					textureManager.bindTexture(glyphTexture);
+			//					textureManager.getTexture(glyphTexture).setFilter(true, true);
+			//					GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR_MIPMAP_LINEAR);
+			//					buffer.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
+			//					lastGlyphTexture = glyphTexture;
+			//				}
 
-				glyphRenderer.draw(textureManager, italic, x, y, buffer, red, green, blue, alpha);
-				if (bold) {
-					glyphRenderer.draw(textureManager, italic, x + glyph.getBoldOffset(), y, buffer, red, green, blue, alpha);
-				}
+			glyphRenderer.draw(italic, x, y, matrix4f, vertexConsumer, red, green, blue, alpha, light);
+			if (bold) {
+				glyphRenderer.draw(italic, x + glyph.getBoldOffset(), y, matrix4f, vertexConsumer, red, green, blue, alpha, light);
 			}
+			//			}
 
 			return glyph.getAdvance(bold);
 		}
@@ -264,10 +263,11 @@ public class McMdRenderer {
 	class TrueTypeAdapter extends FontAdapter {
 
 		@Override
-		public float draw(char c, char kernChar, boolean bold, boolean italic, float x, float y, float height, BufferBuilder buffer, float red, float green, float blue, float alpha) {
+		public float draw(char c, char kernChar, boolean bold, boolean italic, float x, float y, float height, Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, float red, float green, float blue, float alpha, int light) {
 			final Glyph glyph = fontStorage.getGlyph(c);
 			final GlyphRenderer glyphRenderer = fontStorage.getGlyphRenderer(c);
-			final Identifier glyphTexture = glyphRenderer.getId();
+			final VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(glyphRenderer.method_24045(false));
+			//			final Identifier glyphTexture = glyphRenderer.getId();
 
 			final float kerning;
 			if (kernChar == NOTHING) {
@@ -278,21 +278,22 @@ public class McMdRenderer {
 				x += kerning;
 			}
 
-			if (glyphTexture != null) {
-				if (lastGlyphTexture != glyphTexture) {
-					tess.draw();
-					textureManager.bindTexture(glyphTexture);
-					((AbstractTexture)textureManager.getTexture(glyphTexture)).setFilter(true, true);
-					GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR_MIPMAP_LINEAR);
-					buffer.begin(7, VertexFormats.POSITION_UV_COLOR);
-					lastGlyphTexture = glyphTexture;
-				}
+			//			if (glyphTexture != null) {
+			//				if (lastGlyphTexture != glyphTexture) {
+			//					tess.draw();
+			//					textureManager.bindTexture(glyphTexture);
+			//					textureManager.getTexture(glyphTexture).setFilter(true, true);
+			//					GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR_MIPMAP_LINEAR);
+			//					buffer.begin(7, VertexFormats.POSITION_UV_COLOR);
+			//					lastGlyphTexture = glyphTexture;
+			//				}
 
-				glyphRenderer.draw(textureManager, italic, x, y, buffer, red, green, blue, alpha);
-				if (bold) {
-					glyphRenderer.draw(textureManager, italic, x + glyph.getBoldOffset(), y, buffer, red, green, blue, alpha);
-				}
+			glyphRenderer.draw(italic, x, y, matrix4f, vertexConsumer, red, green, blue, alpha, light);
+
+			if (bold) {
+				glyphRenderer.draw(italic, x + glyph.getBoldOffset(), y, matrix4f, vertexConsumer, red, green, blue, alpha, light);
 			}
+			//			}
 
 			return glyph.getAdvance() + kerning;
 		}
@@ -310,7 +311,7 @@ public class McMdRenderer {
 		}
 	}
 
-	public void drawMarkdown(List<String> lines, float x, float y, int color, float yOffset, float height) {
+	public void drawMarkdown(Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, List<String> lines, float x, float y, int color, float yOffset, float height, int light) {
 		GlStateManager.enableAlphaTest();
 
 		if (lines == null || lines.isEmpty()) {
@@ -320,16 +321,17 @@ public class McMdRenderer {
 				color |= 0xFF000000;
 			}
 
-			GlStateManager.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-			GlStateManager.alphaFunc(516, 0.1F);
-			GlStateManager.enableBlend();
+			// TODO: will need to be moved to custom render layer
+			//			GlStateManager.blendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
+			//			GlStateManager.alphaFunc(516, 0.1F);
+			//			GlStateManager.enableBlend();
 			adapter.reset();
-			drawMarkdownInner(lines, x, y, color, yOffset, height);
-			GlStateManager.disableBlend();
+			drawMarkdownInner(matrix4f, vertexConsumerProvider, lines, x, y, color, yOffset, height, light);
+			//			GlStateManager.disableBlend();
 		}
 	}
 
-	public void drawMarkdownInner(List<String> lines, float x, final float yIn, int color, float yOffset, float height) {
+	public void drawMarkdownInner(Matrix4f matrix4f,VertexConsumerProvider vertexConsumerProvider, List<String> lines, float x, final float yIn, int color, float yOffset, float height, int light) {
 		final boolean rightToLeft = baseRenderer.isRightToLeft();
 		final float baseX = x;
 		final float baseRed = ((color >> 16) & 255) / 255.0F;
@@ -339,8 +341,8 @@ public class McMdRenderer {
 		final float green = baseGreen;
 		final float blue = baseBlue;
 		final float alpha = (color >> 24 & 255) / 255.0F;
-		final Tessellator tess = Tessellator.getInstance();
-		final BufferBuilder buff = tess.getBufferBuilder();
+		//		final Tessellator tess = Tessellator.getInstance();
+		//		final BufferBuilder buff = tess..getBuffer();
 		final float yMax = yIn + height;
 		final float singleLine = style.lineHeight;
 		final float singleLinePlus = style.lineHeightPlusHalf;
@@ -358,7 +360,7 @@ public class McMdRenderer {
 		char kernChar = NOTHING;
 		float lineHeight = singleLine;
 
-		buff.begin(7, VertexFormats.POSITION_UV_COLOR);
+		//		vertexConsumer.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
 
 		for (String text : lines) {
 			if (rightToLeft) {
@@ -440,14 +442,15 @@ public class McMdRenderer {
 
 				default:
 					if (y >= yIn && y + lineHeight <= yMax) {
-						final float advance = c == ' ' ? style.space : adapter.draw(c, kernChar, bold > 0, italic > 0, margin + x, y, lineHeight, buff, red, green, blue, alpha);
+
+						final float advance = c == ' ' ? style.space : adapter.draw(c, kernChar, bold > 0, italic > 0, margin + x, y, lineHeight, matrix4f, vertexConsumerProvider, red, green, blue, alpha, light);
 
 						if (strikethru > 0) {
-							rects.add(new Rectangle(margin + x, y + style.strikethroughY, margin + x + advance, y + style.strikethroughY - style.lineThickness, red, green, blue, alpha));
+							rects.add(new Rectangle(margin + x, y + style.strikethroughY, margin + x + advance, y + style.strikethroughY - style.lineThickness, -0.01F, red, green, blue, alpha));
 						}
 
 						if (underline > 0) {
-							rects.add(new Rectangle(margin + x, y + style.underlineY, margin + x + advance, y + style.underlineY - style.lineThickness, red, green, blue, alpha));
+							rects.add(new Rectangle(margin + x, y + style.underlineY, margin + x + advance, y + style.underlineY - style.lineThickness, -0.01F, red, green, blue, alpha));
 						}
 
 						x += advance;
@@ -463,18 +466,13 @@ public class McMdRenderer {
 			x = baseX;
 		}
 
-		tess.draw();
-
 		if (!rects.isEmpty()) {
-			GlStateManager.disableTexture();
-			buff.begin(7, VertexFormats.POSITION_COLOR);
+			final GlyphRenderer gr = fontStorage.getRectangleRenderer();
+			final VertexConsumer vc = vertexConsumerProvider.getBuffer(gr.method_24045(false));
 
 			for (final Rectangle r :rects) {
-				r.draw(buff);
+				gr.drawRectangle(r, matrix4f, vc, light);
 			}
-
-			tess.draw();
-			GlStateManager.enableTexture();
 		}
 	}
 
@@ -513,32 +511,32 @@ public class McMdRenderer {
 		return y;
 	}
 
-	static class Rectangle {
-		protected final float xMin;
-		protected final float yMin;
-		protected final float xMax;
-		protected final float yMax;
-		protected final float red;
-		protected final float green;
-		protected final float blue;
-		protected final float alpha;
-
-		private Rectangle(float xMin, float yMin, float xMax, float yMax, float red, float green, float blue, float alpha) {
-			this.xMin = xMin;
-			this.yMin = yMin;
-			this.xMax = xMax;
-			this.yMax = yMax;
-			this.red = red;
-			this.green = green;
-			this.blue = blue;
-			this.alpha = alpha;
-		}
-
-		public void draw(BufferBuilder buffer) {
-			buffer.vertex(xMin, yMin, 0.0D).color(red, green, blue, alpha).next();
-			buffer.vertex(xMax, yMin, 0.0D).color(red, green, blue, alpha).next();
-			buffer.vertex(xMax, yMax, 0.0D).color(red, green, blue, alpha).next();
-			buffer.vertex(xMin, yMax, 0.0D).color(red, green, blue, alpha).next();
-		}
-	}
+	//	static class Rectangle {
+	//		protected final float xMin;
+	//		protected final float yMin;
+	//		protected final float xMax;
+	//		protected final float yMax;
+	//		protected final float red;
+	//		protected final float green;
+	//		protected final float blue;
+	//		protected final float alpha;
+	//
+	//		private Rectangle(float xMin, float yMin, float xMax, float yMax, float red, float green, float blue, float alpha) {
+	//			this.xMin = xMin;
+	//			this.yMin = yMin;
+	//			this.xMax = xMax;
+	//			this.yMax = yMax;
+	//			this.red = red;
+	//			this.green = green;
+	//			this.blue = blue;
+	//			this.alpha = alpha;
+	//		}
+	//
+	//		public void draw(BufferBuilder buffer) {
+	//			buffer.vertex(xMin, yMin, 0.0D).color(red, green, blue, alpha).next();
+	//			buffer.vertex(xMax, yMin, 0.0D).color(red, green, blue, alpha).next();
+	//			buffer.vertex(xMax, yMax, 0.0D).color(red, green, blue, alpha).next();
+	//			buffer.vertex(xMin, yMax, 0.0D).color(red, green, blue, alpha).next();
+	//		}
+	//	}
 }

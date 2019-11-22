@@ -19,6 +19,8 @@ dependencies {
 	modApi "net.fabricmc:fabric-loader:${loader_version}"
 	modApi "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
 
+	modApi ("grondag:fonthack-${mc_tag}:${project.fonthack_version}.+") { transitive = false }
+	
 	// dev env annotation support
 	compileOnly "org.apiguardian:apiguardian-api:1.0.0"
 	compileOnly "com.google.code.findbugs:jsr305:3.0.2"
