@@ -5,11 +5,13 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import org.lwjgl.opengl.GL11;
+
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.GlStateManager;
 
-import grondag.fonthack.TextRendererExt;
-import grondag.fonthack.TrueTypeGlyphExt;
+import grondag.fonthack.ext.RenderableGlyphExt;
+import grondag.fonthack.ext.TextRendererExt;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.FontStorage;
 import net.minecraft.client.font.Glyph;
@@ -18,6 +20,7 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.texture.AbstractTexture;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.util.Identifier;
 
@@ -62,9 +65,6 @@ public class McMdRenderer {
 	public static final String STR_HALF_NEWLINE = Character.toString(NEWLINE_PLUS_HALF);
 
 	private final TextRenderer baseRenderer;
-	private final TextRenderer italicRenderer;
-	private final TextRenderer boldRenderer;
-	private final TextRenderer boldItalicRenderer;
 
 	private final TextureManager textureManager = MinecraftClient.getInstance().getTextureManager();
 
@@ -75,56 +75,15 @@ public class McMdRenderer {
 
 	public McMdRenderer(
 		McMdStyle style,
-		TextRenderer baseRenderer,
-		TextRenderer italicRenderer,
-		TextRenderer boldRenderer,
-		TextRenderer boldItalicRenderer)
+		TextRenderer baseRenderer)
 	{
 		this.style = style;
 		this.baseRenderer = baseRenderer;
-		this.italicRenderer = italicRenderer;
-		this.boldRenderer = boldRenderer;
-		this.boldItalicRenderer = boldItalicRenderer;
 
-		//		final TextRenderer tex = MinecraftClient.getInstance().textRenderer;
-		//		final FontStorage fs = ((TextRendererExt) tex).ext_fontStorage();
-		//		final FontStorage ttf = ((TextRendererExt) baseRenderer).ext_fontStorage();
-		//
-		//		String out = "\"";
-		//		int outCount = 0;
-		//		for(char c = 0; c < '\uffff'; ++c) {
-		//			final String s = Character.toString(c);
-		//			final Glyph g = fs.getGlyph(c);
-		//			if(g == BlankGlyph.INSTANCE  || s.equals(" ") || s.isEmpty()) {
-		//				final Glyph tg = ttf.getGlyph(c);
-		//				if (tg != null && tg != BlankGlyph.INSTANCE) {
-		//					out = out + "\\u" + Integer.toHexString(c);
-		//					if(++outCount == 16) {
-		//						System.out.println(out + "\",");
-		//						out = "\"";
-		//						outCount = 0;
-		//					}
-		//				}
-		//			}
-		//		}
-		//
-		//		if(outCount > 0) {
-		//			System.out.println(out + "\",");
-		//		}
+		//		adapter = ((TextRendererExt) baseRenderer).ext_fontStorage().getGlyph('a') instanceof RenderableGlyphExt
+		//			? new TrueTypeAdapter() : new StandardAdapter();
 
-
-		if (((TextRendererExt) baseRenderer).ext_fontStorage().getGlyph('a') instanceof TrueTypeGlyphExt
-			&& italicRenderer != null
-			&& ((TextRendererExt) italicRenderer).ext_fontStorage().getGlyph('a') instanceof TrueTypeGlyphExt
-			&& boldRenderer != null
-			&& ((TextRendererExt) boldRenderer).ext_fontStorage().getGlyph('a') instanceof TrueTypeGlyphExt
-			&& boldItalicRenderer != null
-			&& ((TextRendererExt) boldItalicRenderer).ext_fontStorage().getGlyph('a') instanceof TrueTypeGlyphExt)
-		{
-			adapter = new TrueTypeAdapter();
-		} else  {
-			adapter = new StandardAdapter();
-		}
+		adapter = new TrueTypeAdapter();
 	}
 
 	class LineBreaker {
@@ -167,12 +126,14 @@ public class McMdRenderer {
 				case ITALIC:
 					if(italic++ == 0) {
 						kernChar = NOTHING;
+						w += style.italicSpace;
 					}
 					break;
 
 				case ITALIC_OFF:
 					if(--italic == 0) {
 						kernChar = NOTHING;
+						w += style.italicSpace;
 					}
 					break;
 
@@ -196,6 +157,7 @@ public class McMdRenderer {
 
 				case ' ':
 					lastSpace = i;
+					w  += style.space;
 					kernChar = NOTHING;
 					break;
 
@@ -208,10 +170,6 @@ public class McMdRenderer {
 				}
 
 				w += (kernChar == NOTHING ? adapter.getCharWidth(c, bold > 0, italic > 0, lineHeight) : adapter.getCharWidth(c, kernChar, bold > 0, italic > 0, lineHeight));
-
-				if (bold > 0) {
-					++w;
-				}
 
 				if (w + margin > width) {
 					if (singleOrEmpty) {
@@ -253,30 +211,37 @@ public class McMdRenderer {
 
 	abstract class FontAdapter {
 		final Tessellator tess = Tessellator.getInstance();
+		protected final FontStorage  fontStorage = ((TextRendererExt) baseRenderer).ext_fontStorage();
 		final float indentWidth = ((TextRendererExt) baseRenderer).ext_fontStorage().getGlyph(' ').getAdvance() * 5;
+		protected Identifier lastGlyphTexture = null;
 
 		abstract float draw(char c, char kernChar, boolean bold, boolean italic, float x, float y, float height, BufferBuilder buffer, float red, float green, float blue, float alpha);
 
 		protected abstract float getCharWidth(char kernChar, char c, boolean bold, boolean italic, float height);
 
-		protected abstract float getCharWidth(char c, boolean bold, boolean italic, float height);
+		protected float getCharWidth(char c, boolean bold, boolean italic, float height) {
+			return fontStorage.getGlyph(c).getAdvance(bold);
+		}
 
+		protected void reset() {
+			lastGlyphTexture = null;
+		}
 	}
 
 	class StandardAdapter extends FontAdapter {
-		final FontStorage  fontStorage = ((TextRendererExt) baseRenderer).ext_fontStorage();
 
 		@Override
 		public float draw(char c, char kernChar, boolean bold, boolean italic, float x, float y, float height, BufferBuilder buffer, float red, float green, float blue, float alpha) {
 			final Glyph glyph = fontStorage.getGlyph(c);
 			final GlyphRenderer glyphRenderer = fontStorage.getGlyphRenderer(c);
 			final Identifier glyphTexture = glyphRenderer.getId();
-			Identifier lastGlyphTexture = null;
 
 			if (glyphTexture != null) {
 				if (lastGlyphTexture != glyphTexture) {
 					tess.draw();
 					textureManager.bindTexture(glyphTexture);
+					((AbstractTexture)textureManager.getTexture(glyphTexture)).setFilter(true, true);
+					GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR_MIPMAP_LINEAR);
 					buffer.begin(7, VertexFormats.POSITION_UV_COLOR);
 					lastGlyphTexture = glyphTexture;
 				}
@@ -294,68 +259,54 @@ public class McMdRenderer {
 		protected float getCharWidth(char kernChar, char c, boolean bold, boolean italic, float height) {
 			return fontStorage.getGlyph(c).getAdvance(bold);
 		}
-
-		@Override
-		protected float getCharWidth(char c, boolean bold, boolean italic, float height) {
-			return fontStorage.getGlyph(c).getAdvance(bold);
-		}
 	}
 
 	class TrueTypeAdapter extends FontAdapter {
-		final FontStorage  baseStorage = ((TextRendererExt) baseRenderer).ext_fontStorage();
-		final FontStorage  boldStorage = ((TextRendererExt) boldRenderer).ext_fontStorage();
-		final FontStorage  italicStorage = ((TextRendererExt) italicRenderer).ext_fontStorage();
-		final FontStorage  boldItalicStorage = ((TextRendererExt) boldItalicRenderer).ext_fontStorage();
-
-		Identifier lastGlyphTexture = null;
 
 		@Override
 		public float draw(char c, char kernChar, boolean bold, boolean italic, float x, float y, float height, BufferBuilder buffer, float red, float green, float blue, float alpha) {
-			final FontStorage fontStorage;
-			if (bold) {
-				fontStorage = italic ? boldItalicStorage : boldStorage;
-			} else {
-				fontStorage = italic ? italicStorage : baseStorage;
-			}
-
 			final Glyph glyph = fontStorage.getGlyph(c);
 			final GlyphRenderer glyphRenderer = fontStorage.getGlyphRenderer(c);
 			final Identifier glyphTexture = glyphRenderer.getId();
+
+			final float kerning;
+			if (kernChar == NOTHING) {
+				kerning = 0;
+			} else {
+				final RenderableGlyphExt gx = (RenderableGlyphExt) glyph;
+				kerning = gx.kerning(kernChar);
+				x += kerning;
+			}
 
 			if (glyphTexture != null) {
 				if (lastGlyphTexture != glyphTexture) {
 					tess.draw();
 					textureManager.bindTexture(glyphTexture);
+					((AbstractTexture)textureManager.getTexture(glyphTexture)).setFilter(true, true);
+					GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR_MIPMAP_LINEAR);
 					buffer.begin(7, VertexFormats.POSITION_UV_COLOR);
 					lastGlyphTexture = glyphTexture;
 				}
 
-				glyphRenderer.draw(textureManager, false, x, y, buffer, red, green, blue, alpha);
+				glyphRenderer.draw(textureManager, italic, x, y, buffer, red, green, blue, alpha);
+				if (bold) {
+					glyphRenderer.draw(textureManager, italic, x + glyph.getBoldOffset(), y, buffer, red, green, blue, alpha);
+				}
 			}
 
-			return glyph.getAdvance(bold);
+			return glyph.getAdvance() + kerning;
 		}
 
 		@Override
 		protected float getCharWidth(char kernChar, char c, boolean bold, boolean italic, float height) {
-			final FontStorage fontStorage;
-			if (bold) {
-				fontStorage = italic ? boldItalicStorage : boldStorage;
-			} else {
-				fontStorage = italic ? italicStorage : baseStorage;
-			}
-			return fontStorage.getGlyph(c).getAdvance();
-		}
+			final Glyph glyph = fontStorage.getGlyph(c);
 
-		@Override
-		protected float getCharWidth(char c, boolean bold, boolean italic, float height) {
-			final FontStorage fontStorage;
-			if (bold) {
-				fontStorage = italic ? boldItalicStorage : boldStorage;
+			if (kernChar == NOTHING) {
+				return glyph.getAdvance(bold);
 			} else {
-				fontStorage = italic ? italicStorage : baseStorage;
+				final RenderableGlyphExt gx = (RenderableGlyphExt) glyph;
+				return glyph.getAdvance(bold) + gx.kerning(kernChar);
 			}
-			return fontStorage.getGlyph(c).getAdvance();
 		}
 	}
 
@@ -369,7 +320,12 @@ public class McMdRenderer {
 				color |= 0xFF000000;
 			}
 
+			GlStateManager.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+			GlStateManager.alphaFunc(516, 0.1F);
+			GlStateManager.enableBlend();
+			adapter.reset();
 			drawMarkdownInner(lines, x, y, color, yOffset, height);
+			GlStateManager.disableBlend();
 		}
 	}
 
@@ -445,12 +401,14 @@ public class McMdRenderer {
 				case ITALIC:
 					if(italic++ == 0) {
 						kernChar = NOTHING;
+						x += style.italicSpace;
 					}
 					break;
 
 				case ITALIC_OFF:
 					if(--italic == 0) {
 						kernChar = NOTHING;
+						x += style.italicSpace;
 					}
 					break;
 
@@ -482,17 +440,18 @@ public class McMdRenderer {
 
 				default:
 					if (y >= yIn && y + lineHeight <= yMax) {
-						final float advance = adapter.draw(c, kernChar, bold > 0, italic > 0, margin + x, y, lineHeight, buff, red, green, blue, alpha);
+						final float advance = c == ' ' ? style.space : adapter.draw(c, kernChar, bold > 0, italic > 0, margin + x, y, lineHeight, buff, red, green, blue, alpha);
 
 						if (strikethru > 0) {
-							rects.add(new Rectangle(margin + x, y + 4.5F, margin + x + advance, y + 4.5F - 1.0F, red, green, blue, alpha));
+							rects.add(new Rectangle(margin + x, y + style.strikethroughY, margin + x + advance, y + style.strikethroughY - style.lineThickness, red, green, blue, alpha));
 						}
 
 						if (underline > 0) {
-							rects.add(new Rectangle(margin + x, y + 9.0F, margin + x + advance, y + 9.0F - 1.0F, red, green, blue, alpha));
+							rects.add(new Rectangle(margin + x, y + style.underlineY, margin + x + advance, y + style.underlineY - style.lineThickness, red, green, blue, alpha));
 						}
 
 						x += advance;
+						kernChar = c;
 					}
 				}
 			}
@@ -525,9 +484,9 @@ public class McMdRenderer {
 	public float verticalHeight(List<String> lines) {
 		float y = 0;
 
-		final int singleLine = 9 + 2;
-		final int singleLinePlus = singleLine + (singleLine >> 1);
-		int lineHeight = singleLine;
+		final float singleLine = style.lineHeight;
+		final float singleLinePlus = style.lineHeightPlusHalf;
+		float lineHeight = singleLine;
 		for (final String text : lines) {
 			for(int i = 0; i < text.length(); ++i) {
 				final char c = text.charAt(i);
