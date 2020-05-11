@@ -8,8 +8,6 @@ import javax.annotation.Nullable;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.GlStateManager;
 
-import grondag.fonthack.ext.RenderableGlyphExt;
-import grondag.fonthack.ext.TextRendererExt;
 import net.minecraft.client.font.FontStorage;
 import net.minecraft.client.font.Glyph;
 import net.minecraft.client.font.GlyphRenderer;
@@ -18,8 +16,11 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Matrix4f;
+
+import grondag.fonthack.ext.RenderableGlyphExt;
+import grondag.fonthack.ext.TextRendererExt;
 
 public class McMdRenderer {
 	//	char ESC = '§';
