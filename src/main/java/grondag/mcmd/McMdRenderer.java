@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.GlStateManager;
 
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.FontStorage;
 import net.minecraft.client.font.Glyph;
 import net.minecraft.client.font.GlyphRenderer;
@@ -19,8 +20,8 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Matrix4f;
 
-import grondag.fonthack.ext.RenderableGlyphExt;
-import grondag.fonthack.ext.TextRendererExt;
+import grondag.fonthack.ext.FontManagerExt;
+import grondag.fonthack.ext.MinecraftClientExt;
 
 public class McMdRenderer {
 	//	char ESC = '§';
@@ -62,25 +63,23 @@ public class McMdRenderer {
 	public static final String STR_NEWLINE = Character.toString(NEWLINE);
 	public static final String STR_HALF_NEWLINE = Character.toString(NEWLINE_PLUS_HALF);
 
-	private final TextRenderer baseRenderer;
-
 	private final FontAdapter adapter;
 	private final List<Rectangle> rects = Lists.newArrayList();
 	protected final FontStorage fontStorage;
+	final TextRenderer vanillaRenderer;
 
 	final McMdStyle style;
 
 	public McMdRenderer(
 			McMdStyle style,
-			TextRenderer baseRenderer)
+			Identifier baseFont)
 	{
 		this.style = style;
-		this.baseRenderer = baseRenderer;
-		fontStorage = ((TextRendererExt) baseRenderer).ext_fontStorage();
-		//		adapter = ((TextRendererExt) baseRenderer).ext_fontStorage().getGlyph('a') instanceof RenderableGlyphExt
-		//			? new TrueTypeAdapter() : new StandardAdapter();
+		fontStorage = ((FontManagerExt)((MinecraftClientExt)MinecraftClient.getInstance()).ext_fontManager()).ext_getFontStorage(baseFont);
 
-		adapter = new TrueTypeAdapter();
+		adapter = new FontAdapter();
+
+		vanillaRenderer = MinecraftClient.getInstance().textRenderer;
 	}
 
 	class LineBreaker {
@@ -206,36 +205,17 @@ public class McMdRenderer {
 		return lines;
 	}
 
-	abstract class FontAdapter {
+	class FontAdapter {
 		final Tessellator tess = Tessellator.getInstance();
-		final float indentWidth = ((TextRendererExt) baseRenderer).ext_fontStorage().getGlyph(' ').getAdvance() * 5;
+		final float indentWidth = fontStorage.getGlyph(' ').getAdvance() * 5;
 		protected Identifier lastGlyphTexture = null;
 
-		abstract float draw(char c, char kernChar, boolean bold, boolean italic, float x, float y, float height, Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, float red, float green, float blue, float alpha, int light);
-
-		protected abstract float getCharWidth(char kernChar, char c, boolean bold, boolean italic, float height);
-
-		protected float getCharWidth(char c, boolean bold, boolean italic, float height) {
-			return fontStorage.getGlyph(c).getAdvance(bold);
-		}
-
-		protected void reset() {
-			lastGlyphTexture = null;
-		}
-	}
-
-	class StandardAdapter extends FontAdapter {
-
-		@Override
 		public float draw(char c, char kernChar, boolean bold, boolean italic, float x, float y, float height, Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, float red, float green, float blue, float alpha, int light) {
-
-
-			//TODO: will need a custom renderlayer here to get correct blending
 			final Glyph glyph = fontStorage.getGlyph(c);
 			final GlyphRenderer glyphRenderer = fontStorage.getGlyphRenderer(c);
 			final VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(glyphRenderer.method_24045(false));
-			//			final Identifier glyphTexture = glyphRenderer.getId();
 
+			//TODO: will need a custom renderlayer here to get correct blending
 			//			if (glyphTexture != null) {
 			//				if (lastGlyphTexture != glyphTexture) {
 			//					tess.draw();
@@ -255,62 +235,19 @@ public class McMdRenderer {
 			return glyph.getAdvance(bold);
 		}
 
-		@Override
 		protected float getCharWidth(char kernChar, char c, boolean bold, boolean italic, float height) {
 			return fontStorage.getGlyph(c).getAdvance(bold);
 		}
-	}
 
-	class TrueTypeAdapter extends FontAdapter {
-
-		@Override
-		public float draw(char c, char kernChar, boolean bold, boolean italic, float x, float y, float height, Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, float red, float green, float blue, float alpha, int light) {
-			final Glyph glyph = fontStorage.getGlyph(c);
-			final GlyphRenderer glyphRenderer = fontStorage.getGlyphRenderer(c);
-			final VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(glyphRenderer.method_24045(false));
-			//			final Identifier glyphTexture = glyphRenderer.getId();
-
-			final float kerning;
-			if (kernChar == NOTHING) {
-				kerning = 0;
-			} else {
-				final RenderableGlyphExt gx = (RenderableGlyphExt) glyph;
-				kerning = gx.kerning(kernChar);
-				x += kerning;
-			}
-
-			//			if (glyphTexture != null) {
-			//				if (lastGlyphTexture != glyphTexture) {
-			//					tess.draw();
-			//					textureManager.bindTexture(glyphTexture);
-			//					textureManager.getTexture(glyphTexture).setFilter(true, true);
-			//					GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR_MIPMAP_LINEAR);
-			//					buffer.begin(7, VertexFormats.POSITION_UV_COLOR);
-			//					lastGlyphTexture = glyphTexture;
-			//				}
-
-			glyphRenderer.draw(italic, x, y, matrix4f, vertexConsumer, red, green, blue, alpha, light);
-
-			if (bold) {
-				glyphRenderer.draw(italic, x + glyph.getBoldOffset(), y, matrix4f, vertexConsumer, red, green, blue, alpha, light);
-			}
-			//			}
-
-			return glyph.getAdvance() + kerning;
+		protected float getCharWidth(char c, boolean bold, boolean italic, float height) {
+			return fontStorage.getGlyph(c).getAdvance(bold);
 		}
 
-		@Override
-		protected float getCharWidth(char kernChar, char c, boolean bold, boolean italic, float height) {
-			final Glyph glyph = fontStorage.getGlyph(c);
-
-			if (kernChar == NOTHING) {
-				return glyph.getAdvance(bold);
-			} else {
-				final RenderableGlyphExt gx = (RenderableGlyphExt) glyph;
-				return glyph.getAdvance(bold) + gx.kerning(kernChar);
-			}
+		protected void reset() {
+			lastGlyphTexture = null;
 		}
 	}
+
 
 	public void drawMarkdown(Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, List<String> lines, float x, float y, int color, float yOffset, float height, int light) {
 		GlStateManager.enableAlphaTest();
@@ -333,7 +270,7 @@ public class McMdRenderer {
 	}
 
 	public void drawMarkdownInner(Matrix4f matrix4f,VertexConsumerProvider vertexConsumerProvider, List<String> lines, float x, final float yIn, int color, float yOffset, float height, int light) {
-		final boolean rightToLeft = baseRenderer.isRightToLeft();
+		final boolean rightToLeft = vanillaRenderer.isRightToLeft();
 		final float baseX = x;
 		final float baseRed = ((color >> 16) & 255) / 255.0F;
 		final float baseGreen = ((color >> 8) & 255) / 255.0F;
@@ -365,7 +302,7 @@ public class McMdRenderer {
 
 		for (String text : lines) {
 			if (rightToLeft) {
-				text = baseRenderer.mirror(text);
+				text = vanillaRenderer.mirror(text);
 			}
 
 			for(int i = 0; i < text.length(); ++i) {
@@ -417,12 +354,12 @@ public class McMdRenderer {
 
 				case INDENT_PLUS:
 					++indent;
-					margin = indent * indentWidth * (baseRenderer.isRightToLeft() ? -1 : 1);
+					margin = indent * indentWidth * (vanillaRenderer.isRightToLeft() ? -1 : 1);
 					break;
 
 				case INDENT_MINUS:
 					--indent;
-					margin = indent * indentWidth * (baseRenderer.isRightToLeft() ? -1 : 1);
+					margin = indent * indentWidth * (vanillaRenderer.isRightToLeft() ? -1 : 1);
 					break;
 
 				case ALIGN_TO_INDENT:
