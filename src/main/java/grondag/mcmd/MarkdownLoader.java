@@ -7,15 +7,18 @@ import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import grondag.mcmd.node.HtmlBlock;
-import grondag.mcmd.node.Node;
-import grondag.mcmd.parser.Parser;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
+
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
+
+import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
+
+import grondag.mcmd.node.HtmlBlock;
+import grondag.mcmd.node.Node;
+import grondag.mcmd.parser.Parser;
 
 public class MarkdownLoader implements SimpleSynchronousResourceReloadListener {
 	public static final MarkdownLoader INSTANCE = new MarkdownLoader();
@@ -37,6 +40,7 @@ public class MarkdownLoader implements SimpleSynchronousResourceReloadListener {
 		return TEXTS.get(id);
 	}
 
+	@SuppressWarnings("resource")
 	@Override
 	public void apply(ResourceManager resourceManager) {
 		TEXTS.clear();

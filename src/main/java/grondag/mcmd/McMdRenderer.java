@@ -70,6 +70,7 @@ public class McMdRenderer {
 
 	final McMdStyle style;
 
+	@SuppressWarnings("resource")
 	public McMdRenderer(
 			McMdStyle style,
 			Identifier baseFont)
