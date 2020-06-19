@@ -208,8 +208,12 @@ public class McMdRenderer {
 
 	class FontAdapter {
 		final Tessellator tess = Tessellator.getInstance();
-		final float indentWidth = fontStorage.getGlyph(' ').getAdvance() * 5;
+		final float adv = fontStorage.getGlyph(' ').getAdvance();
+		final float indentWidth = adv * 4;
 		protected Identifier lastGlyphTexture = null;
+
+		// hack for TTF being generally thinner
+		final float boldOffset = adv / 8f;
 
 		public float draw(char c, char kernChar, boolean bold, boolean italic, float x, float y, float height, Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, float red, float green, float blue, float alpha, int light) {
 			final Glyph glyph = fontStorage.getGlyph(c);
@@ -229,7 +233,7 @@ public class McMdRenderer {
 
 			glyphRenderer.draw(italic, x, y, matrix4f, vertexConsumer, red, green, blue, alpha, light);
 			if (bold) {
-				glyphRenderer.draw(italic, x + glyph.getBoldOffset(), y, matrix4f, vertexConsumer, red, green, blue, alpha, light);
+				glyphRenderer.draw(italic, x + boldOffset, y, matrix4f, vertexConsumer, red, green, blue, alpha, light);
 			}
 			//			}
 

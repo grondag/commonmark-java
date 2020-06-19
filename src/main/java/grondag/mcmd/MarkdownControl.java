@@ -15,8 +15,10 @@
  ******************************************************************************/
 package grondag.mcmd;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.function.IntSupplier;
+import java.util.function.Supplier;
+
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -37,7 +39,10 @@ import grondag.mcmd.renderer.mc.McMdContentRenderer;
 
 @Environment(EnvType.CLIENT)
 public class MarkdownControl extends AbstractControl<MarkdownControl> {
-	protected List<String> lines = null;
+	protected final Supplier<Node> markdownSupplier;
+	protected final IntSupplier versionSupplier;
+
+	protected final ObjectArrayList<String> lines = new ObjectArrayList<>();
 	final McMdContentRenderer renderer = McMdContentRenderer.builder().build();
 	protected float textHeight = 0;
 
@@ -48,18 +53,27 @@ public class MarkdownControl extends AbstractControl<MarkdownControl> {
 	protected float maxButtonOffset = 0;
 
 	protected Slider slider;
-	Node markdown;
+	protected int version;
 	final McMdRenderer mcmd;
-	public MarkdownControl(ScreenRenderContext renderContext, Node document, Identifier baseFont) {
+
+	public MarkdownControl(ScreenRenderContext renderContext, Supplier<Node> markdownSupplier, IntSupplier versionSupplier, Identifier baseFont) {
 		super(renderContext);
-		markdown = document;
+		this.markdownSupplier = markdownSupplier;
+		this.versionSupplier = versionSupplier;
+		version = versionSupplier.getAsInt();
 		isDirty = true;
 		mcmd = new McMdRenderer(new McMdStyle(), baseFont);
 	}
 
-
 	@Override
 	protected void drawContent(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+		final int v = versionSupplier.getAsInt();
+
+		if (isDirty || v != version) {
+			parse();
+			version = v;
+		}
+
 		final VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
 		mcmd.drawMarkdown(AffineTransformation.identity().getMatrix(), immediate, lines, left, top, 0, renderStart, height, mouseY);
 		immediate.draw();
@@ -74,23 +88,17 @@ public class MarkdownControl extends AbstractControl<MarkdownControl> {
 		}
 	}
 
-	protected void parse(McMdRenderer mcmd, int width) {
+	protected void parse() {
 		isDirty = false;
-
-		final String text = renderer.render(markdown);
-
-		if (lines == null) {
-			lines = new ArrayList<>();
-		} else {
-			lines.clear();
-		}
-
-		mcmd.wrapMarkdownToWidth(text, width, lines);
+		final String text = renderer.render(markdownSupplier.get());
+		lines.clear();
+		final int w = (int) width - theme.scrollbarWidth - theme.internalMargin;
+		mcmd.wrapMarkdownToWidth(text, w, lines);
 	}
 
 	@Override
 	protected void handleCoordinateUpdate() {
-		parse(mcmd, (int) width - theme.scrollbarWidth - theme.internalMargin);
+		parse();
 
 		textHeight = mcmd.verticalHeight(lines);
 		buttonHeight = textHeight > height ? (height - 2) * height / textHeight : 0;
