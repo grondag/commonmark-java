@@ -3,10 +3,11 @@ package grondag.mcmd;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.GlStateManager;
+import grondag.fonthack.ext.FontManagerExt;
+import grondag.fonthack.ext.MinecraftClientExt;
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.FontStorage;
@@ -19,9 +20,6 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Matrix4f;
-
-import grondag.fonthack.ext.FontManagerExt;
-import grondag.fonthack.ext.MinecraftClientExt;
 
 public class McMdRenderer {
 	//	char ESC = '§';
@@ -72,8 +70,8 @@ public class McMdRenderer {
 
 	@SuppressWarnings("resource")
 	public McMdRenderer(
-			McMdStyle style,
-			Identifier baseFont)
+	McMdStyle style,
+	Identifier baseFont)
 	{
 		this.style = style;
 		fontStorage = ((FontManagerExt)((MinecraftClientExt)MinecraftClient.getInstance()).ext_fontManager()).ext_getFontStorage(baseFont);
@@ -108,58 +106,58 @@ public class McMdRenderer {
 				final char c = text.charAt(i);
 
 				switch(c) {
-				case BOLD:
-					if(bold++ == 0) {
+					case BOLD:
+						if(bold++ == 0) {
+							kernChar = NOTHING;
+						}
+						break;
+
+					case BOLD_OFF:
+						if(--bold == 0) {
+							kernChar = NOTHING;
+						}
+						break;
+
+					case ITALIC:
+						if(italic++ == 0) {
+							kernChar = NOTHING;
+							w += style.italicSpace;
+						}
+						break;
+
+					case ITALIC_OFF:
+						if(--italic == 0) {
+							kernChar = NOTHING;
+							w += style.italicSpace;
+						}
+						break;
+
+					case INDENT_PLUS:
+						margin = ++indent * indentWidth;
+						break;
+
+					case INDENT_MINUS:
+						margin = --indent * indentWidth;
+						break;
+
+					case ALIGN_TO_INDENT:
+						//because margin is always added, resetting to margin is resetting to zero
 						kernChar = NOTHING;
-					}
-					break;
+						w = 0;
+						break;
 
-				case BOLD_OFF:
-					if(--bold == 0) {
+					case NEWLINE:
+					case NEWLINE_PLUS_HALF:
+						return i + 1;
+
+					case ' ':
+						lastSpace = i;
+						w  += style.space;
 						kernChar = NOTHING;
-					}
-					break;
+						break;
 
-				case ITALIC:
-					if(italic++ == 0) {
-						kernChar = NOTHING;
-						w += style.italicSpace;
-					}
-					break;
-
-				case ITALIC_OFF:
-					if(--italic == 0) {
-						kernChar = NOTHING;
-						w += style.italicSpace;
-					}
-					break;
-
-				case INDENT_PLUS:
-					margin = ++indent * indentWidth;
-					break;
-
-				case INDENT_MINUS:
-					margin = --indent * indentWidth;
-					break;
-
-				case ALIGN_TO_INDENT:
-					//because margin is always added, resetting to margin is resetting to zero
-					kernChar = NOTHING;
-					w = 0;
-					break;
-
-				case NEWLINE:
-				case NEWLINE_PLUS_HALF:
-					return i + 1;
-
-				case ' ':
-					lastSpace = i;
-					w  += style.space;
-					kernChar = NOTHING;
-					break;
-
-				default:
-					break;
+					default:
+						break;
 				}
 
 				if (w != 0.0F) {
@@ -315,90 +313,90 @@ public class McMdRenderer {
 
 				switch(c) {
 
-				case BOLD:
-					if(bold++ == 0) {
-						kernChar = NOTHING;
-					}
-					break;
-
-				case BOLD_OFF:
-					if(--bold == 0) {
-						kernChar = NOTHING;
-					}
-					break;
-
-				case STRIKETHROUGH:
-					++strikethru;
-					break;
-
-				case STRIKETHROUGH_OFF:
-					--strikethru;
-					break;
-
-				case UNDERLINE:
-					++underline;
-					break;
-
-				case UNDERLINE_OFF:
-					--underline;
-					break;
-
-				case ITALIC:
-					if(italic++ == 0) {
-						kernChar = NOTHING;
-						x += style.italicSpace;
-					}
-					break;
-
-				case ITALIC_OFF:
-					if(--italic == 0) {
-						kernChar = NOTHING;
-						x += style.italicSpace;
-					}
-					break;
-
-				case INDENT_PLUS:
-					++indent;
-					margin = indent * indentWidth * (vanillaRenderer.isRightToLeft() ? -1 : 1);
-					break;
-
-				case INDENT_MINUS:
-					--indent;
-					margin = indent * indentWidth * (vanillaRenderer.isRightToLeft() ? -1 : 1);
-					break;
-
-				case ALIGN_TO_INDENT:
-					//because margin is always added, resetting to margin is resetting to base
-					kernChar = NOTHING;
-					x = baseX;
-					break;
-
-				case NEWLINE:
-					lineHeight = singleLine;
-					kernChar = NOTHING;
-					break;
-
-				case NEWLINE_PLUS_HALF:
-					lineHeight = singleLinePlus;
-					kernChar = NOTHING;
-					break;
-
-				default:
-					if (y >= yIn && y + lineHeight <= yMax) {
-
-						final float advance = c == ' ' ? style.space : adapter.draw(c, kernChar, bold > 0, italic > 0, margin + x, y, lineHeight, matrix4f, vertexConsumerProvider, red, green, blue, alpha, light);
-
-						if (strikethru > 0) {
-							rects.add(new Rectangle(margin + x, y + style.strikethroughY, margin + x + advance, y + style.strikethroughY - style.lineThickness, -0.01F, red, green, blue, alpha));
+					case BOLD:
+						if(bold++ == 0) {
+							kernChar = NOTHING;
 						}
+						break;
 
-						if (underline > 0) {
-							rects.add(new Rectangle(margin + x, y + style.underlineY, margin + x + advance, y + style.underlineY - style.lineThickness, -0.01F, red, green, blue, alpha));
+					case BOLD_OFF:
+						if(--bold == 0) {
+							kernChar = NOTHING;
 						}
+						break;
 
-						x += advance;
-						kernChar = c;
-					}
+					case STRIKETHROUGH:
+						++strikethru;
+						break;
+
+					case STRIKETHROUGH_OFF:
+						--strikethru;
+						break;
+
+					case UNDERLINE:
+						++underline;
+						break;
+
+					case UNDERLINE_OFF:
+						--underline;
+						break;
+
+					case ITALIC:
+						if(italic++ == 0) {
+							kernChar = NOTHING;
+							x += style.italicSpace;
+						}
+						break;
+
+					case ITALIC_OFF:
+						if(--italic == 0) {
+							kernChar = NOTHING;
+							x += style.italicSpace;
+						}
+						break;
+
+					case INDENT_PLUS:
+						++indent;
+						margin = indent * indentWidth * (vanillaRenderer.isRightToLeft() ? -1 : 1);
+						break;
+
+					case INDENT_MINUS:
+						--indent;
+						margin = indent * indentWidth * (vanillaRenderer.isRightToLeft() ? -1 : 1);
+						break;
+
+					case ALIGN_TO_INDENT:
+						//because margin is always added, resetting to margin is resetting to base
+						kernChar = NOTHING;
+						x = baseX;
+						break;
+
+					case NEWLINE:
+						lineHeight = singleLine;
+						kernChar = NOTHING;
+						break;
+
+					case NEWLINE_PLUS_HALF:
+						lineHeight = singleLinePlus;
+						kernChar = NOTHING;
+						break;
+
+					default:
+						if (y >= yIn && y + lineHeight <= yMax) {
+
+							final float advance = c == ' ' ? style.space : adapter.draw(c, kernChar, bold > 0, italic > 0, margin + x, y, lineHeight, matrix4f, vertexConsumerProvider, red, green, blue, alpha, light);
+
+							if (strikethru > 0) {
+								rects.add(new Rectangle(margin + x, y + style.strikethroughY, margin + x + advance, y + style.strikethroughY - style.lineThickness, -0.01F, red, green, blue, alpha));
+							}
+
+							if (underline > 0) {
+								rects.add(new Rectangle(margin + x, y + style.underlineY, margin + x + advance, y + style.underlineY - style.lineThickness, -0.01F, red, green, blue, alpha));
+							}
+
+							x += advance;
+							kernChar = c;
+						}
 				}
 			}
 
@@ -434,16 +432,16 @@ public class McMdRenderer {
 
 				switch(c) {
 
-				case NEWLINE:
-					lineHeight = singleLine;
-					break;
+					case NEWLINE:
+						lineHeight = singleLine;
+						break;
 
-				case NEWLINE_PLUS_HALF:
-					lineHeight = singleLinePlus;
-					break;
+					case NEWLINE_PLUS_HALF:
+						lineHeight = singleLinePlus;
+						break;
 
-				default:
-					break;
+					default:
+						break;
 				}
 			}
 
