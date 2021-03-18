@@ -22,9 +22,9 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.util.math.AffineTransformation;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.AffineTransformation;
 import net.minecraft.util.math.MathHelper;
 
 import net.fabricmc.api.EnvType;

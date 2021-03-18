@@ -4,9 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.platform.GlStateManager;
-import grondag.fonthack.ext.FontManagerExt;
-import grondag.fonthack.ext.MinecraftClientExt;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.client.MinecraftClient;
@@ -20,6 +17,9 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Matrix4f;
+
+import grondag.fonthack.ext.FontManagerExt;
+import grondag.fonthack.ext.MinecraftClientExt;
 
 public class McMdRenderer {
 	//	char ESC = '§';
@@ -253,7 +253,8 @@ public class McMdRenderer {
 
 
 	public void drawMarkdown(Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, List<String> lines, float x, float y, int color, float yOffset, float height, int light) {
-		GlStateManager.enableAlphaTest();
+		// No longer supported in 1.17 - anything else needed?
+		//GlStateManager.enableAlphaTest();
 
 		if (lines == null || lines.isEmpty()) {
 			return;
@@ -262,7 +263,7 @@ public class McMdRenderer {
 				color |= 0xFF000000;
 			}
 
-			// TODO: will need to be moved to custom render layer
+			// TODO: may need to be moved to custom render layer
 			//			GlStateManager.blendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
 			//			GlStateManager.alphaFunc(516, 0.1F);
 			//			GlStateManager.enableBlend();
@@ -272,7 +273,7 @@ public class McMdRenderer {
 		}
 	}
 
-	public void drawMarkdownInner(Matrix4f matrix4f,VertexConsumerProvider vertexConsumerProvider, List<String> lines, float x, final float yIn, int color, float yOffset, float height, int light) {
+	public void drawMarkdownInner(Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, List<String> lines, float x, final float yIn, int color, float yOffset, float height, int light) {
 		final boolean rightToLeft = vanillaRenderer.isRightToLeft();
 		final float baseX = x;
 		final float baseRed = ((color >> 16) & 255) / 255.0F;
@@ -281,9 +282,13 @@ public class McMdRenderer {
 		final float red = baseRed;
 		final float green = baseGreen;
 		final float blue = baseBlue;
-		final float alpha = (color >> 24 & 255) / 255.0F;
-		//		final Tessellator tess = Tessellator.getInstance();
-		//		final BufferBuilder buff = tess..getBuffer();
+
+		float alpha = (color >> 24 & 255) / 255.0F;
+
+		if (alpha == 0) {
+			alpha = 1.0f;
+		}
+
 		final float yMax = yIn + height;
 		final float singleLine = style.lineHeight;
 		final float singleLinePlus = style.lineHeightPlusHalf;
