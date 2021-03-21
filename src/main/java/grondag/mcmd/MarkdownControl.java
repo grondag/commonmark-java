@@ -26,6 +26,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.AffineTransformation;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Matrix4f;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -77,14 +78,14 @@ public class MarkdownControl extends AbstractControl<MarkdownControl> {
 		final VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
 		mcmd.drawMarkdown(AffineTransformation.identity().getMatrix(), immediate, lines, left, top, 0, renderStart, height, mouseY);
 		immediate.draw();
-		drawScrollIfNeeded();
+		drawScrollIfNeeded(matrixStack.peek().getModel());
 	}
 
-	protected void drawScrollIfNeeded() {
+	protected void drawScrollIfNeeded(Matrix4f matrix) {
 		if (buttonHeight != 0) {
-			GuiUtil.drawRect(left + width - theme.scrollbarWidth, top, right, bottom, 0xFF505050);
+			GuiUtil.drawRect(matrix, left + width - theme.scrollbarWidth, top, right, bottom, 0xFF505050);
 
-			GuiUtil.drawRect(left + width - theme.scrollbarWidth + 1, top + 1 + buttonOffset, right - 1, top + buttonOffset + 1 + buttonHeight, 0xFF508080);
+			GuiUtil.drawRect(matrix, left + width - theme.scrollbarWidth + 1, top + 1 + buttonOffset, right - 1, top + buttonOffset + 1 + buttonHeight, 0xFF508080);
 		}
 	}
 
