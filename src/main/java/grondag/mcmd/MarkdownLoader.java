@@ -42,7 +42,7 @@ public class MarkdownLoader implements SimpleSynchronousResourceReloadListener {
 
 	@SuppressWarnings("resource")
 	@Override
-	public void apply(ResourceManager resourceManager) {
+	public void reload(ResourceManager resourceManager) {
 		TEXTS.clear();
 		loadLanguage(resourceManager, DEFAULT_LANGUAGE);
 
