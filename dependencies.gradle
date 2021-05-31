@@ -15,16 +15,12 @@ dependencies {
 	modApi "net.fabricmc:fabric-loader:${loader_version}"
 	modApi "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
 
-    modImplementation ("grondag:fermion-${project.mc_tag}:${project.fermion_version}.+") { transitive = false }
+    modImplementation ("grondag:fermion-${project.mc_tag}:${project.fermion_version}.+") { transitive = false; changing = true; }
 	include "grondag:fermion-${project.mc_tag}:${project.fermion_version}.+"
 	
-  	modImplementation ("grondag:fermion-gui-${project.mc_tag}:${project.fermion_gui_version}.+") { transitive = false }
+  	modImplementation ("grondag:fermion-gui-${project.mc_tag}:${project.fermion_gui_version}.+") { transitive = false; changing = true; }
   	include "grondag:fermion-gui-${project.mc_tag}:${project.fermion_gui_version}.+"
   	
-	modImplementation ("grondag:fonthack-${project.mc_tag}:${project.fonthack_version}.+") { transitive = false }
+	modImplementation ("grondag:fonthack-${project.mc_tag}:${project.fonthack_version}.+") { transitive = false; changing = true; }
 	include "grondag:fonthack-${project.mc_tag}:${project.fonthack_version}.+"
-	
-	// dev env annotation support
-	compileOnly "org.apiguardian:apiguardian-api:1.0.0"
-	compileOnly "com.google.code.findbugs:jsr305:3.0.2"
 }
