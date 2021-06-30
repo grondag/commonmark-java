@@ -216,7 +216,7 @@ public class McMdRenderer {
 		public float draw(char c, char kernChar, boolean bold, boolean italic, float x, float y, float height, Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, float red, float green, float blue, float alpha, int light) {
 			final Glyph glyph = fontStorage.getGlyph(c);
 			final GlyphRenderer glyphRenderer = fontStorage.getGlyphRenderer(c);
-			final VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(glyphRenderer.getLayer(TextRenderer.class_6415.field_33993));
+			final VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(glyphRenderer.getLayer(TextRenderer.TextLayerType.NORMAL));
 
 			//TODO: will need a custom renderlayer here to get correct blending
 			//			if (glyphTexture != null) {
@@ -414,7 +414,7 @@ public class McMdRenderer {
 
 		if (!rects.isEmpty()) {
 			final GlyphRenderer gr = fontStorage.getRectangleRenderer();
-			final VertexConsumer vc = vertexConsumerProvider.getBuffer(gr.getLayer(TextRenderer.class_6415.field_33993));
+			final VertexConsumer vc = vertexConsumerProvider.getBuffer(gr.getLayer(TextRenderer.TextLayerType.NORMAL));
 
 			for (final Rectangle r :rects) {
 				gr.drawRectangle(r, matrix4f, vc, light);
