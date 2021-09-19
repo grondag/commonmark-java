@@ -8,14 +8,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.util.Identifier;
-
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
 import grondag.mcmd.node.HtmlBlock;
 import grondag.mcmd.node.Node;
 import grondag.mcmd.parser.Parser;
@@ -30,24 +27,24 @@ public class MarkdownLoader implements SimpleSynchronousResourceReloadListener {
 	private static final String OPENING = "^<\\?\\s+[a-z0-9:_]+\\s*\\n+";
 	private static final String CLOSING = "\\n*.*\\?>\\s*\\n*$";
 
-	private static final Object2ObjectOpenHashMap<Identifier, Node> TEXTS = new Object2ObjectOpenHashMap<>();
+	private static final Object2ObjectOpenHashMap<ResourceLocation, Node> TEXTS = new Object2ObjectOpenHashMap<>();
 
-	private final Identifier id = new  Identifier(McMdClient.MOD_ID + ":markdown_loader");
+	private final ResourceLocation id = new  ResourceLocation(McMdClient.MOD_ID + ":markdown_loader");
 
 	private final Parser parser = Parser.builder().build();
 
-	public static Node get(Identifier id) {
+	public static Node get(ResourceLocation id) {
 		return TEXTS.get(id);
 	}
 
 	@SuppressWarnings("resource")
 	@Override
-	public void reload(ResourceManager resourceManager) {
+	public void onResourceManagerReload(ResourceManager resourceManager) {
 		TEXTS.clear();
 		loadLanguage(resourceManager, DEFAULT_LANGUAGE);
 
-		if(MinecraftClient.getInstance() != null && !DEFAULT_LANGUAGE.equals(MinecraftClient.getInstance().options.language)) {
-			loadLanguage(resourceManager, MinecraftClient.getInstance().options.language);
+		if(Minecraft.getInstance() != null && !DEFAULT_LANGUAGE.equals(Minecraft.getInstance().options.languageCode)) {
+			loadLanguage(resourceManager, Minecraft.getInstance().options.languageCode);
 		}
 	}
 
@@ -55,9 +52,9 @@ public class MarkdownLoader implements SimpleSynchronousResourceReloadListener {
 		final String suffix = "." + languageCode;
 		final int suffixLength = suffix.length();
 
-		for(final Identifier srcId : resourceManager.findResources(FOLDER_NAME, s -> s.endsWith(suffix))) {
+		for(final ResourceLocation srcId : resourceManager.listResources(FOLDER_NAME, s -> s.endsWith(suffix))) {
 			final String path = srcId.getPath();
-			final Identifier targetId = new Identifier(srcId.getNamespace(), path.substring(PATH_START, path.length() - suffixLength));
+			final ResourceLocation targetId = new ResourceLocation(srcId.getNamespace(), path.substring(PATH_START, path.length() - suffixLength));
 			final Node node = loadMarkdown(resourceManager, srcId, targetId);
 
 			if (node.getFirstChild() instanceof HtmlBlock) {
@@ -76,7 +73,7 @@ public class MarkdownLoader implements SimpleSynchronousResourceReloadListener {
 
 			if (matcher.find()) {
 				final String path = matcher.group(1);
-				final Identifier targetId = path.contains(":") ? new Identifier(path) : new Identifier(namespace, path);
+				final ResourceLocation targetId = path.contains(":") ? new ResourceLocation(path) : new ResourceLocation(namespace, path);
 				final String text = raw.replaceAll(OPENING, "").replaceAll(CLOSING, "");
 				TEXTS.put(targetId, parser.parse(text));
 			}
@@ -85,7 +82,7 @@ public class MarkdownLoader implements SimpleSynchronousResourceReloadListener {
 		}
 	}
 
-	private Node loadMarkdown(ResourceManager resourceManager, Identifier srcId, Identifier targetId) {
+	private Node loadMarkdown(ResourceManager resourceManager, ResourceLocation srcId, ResourceLocation targetId) {
 		try (final Resource src = resourceManager.getResource(srcId)) {
 			try(final InputStream inputStream = src.getInputStream()) {
 				try(final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
@@ -104,7 +101,7 @@ public class MarkdownLoader implements SimpleSynchronousResourceReloadListener {
 	}
 
 	@Override
-	public Identifier getFabricId() {
+	public ResourceLocation getFabricId() {
 		return id;
 	}
 }

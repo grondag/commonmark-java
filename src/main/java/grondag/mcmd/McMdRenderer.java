@@ -2,22 +2,19 @@ package grondag.mcmd;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.font.FontSet;
+import net.minecraft.client.gui.font.glyphs.BakedGlyph;
+import net.minecraft.client.gui.font.glyphs.BakedGlyph.Effect;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.resources.ResourceLocation;
 import com.google.common.collect.Lists;
+import com.mojang.blaze3d.font.GlyphInfo;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Matrix4f;
 import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.FontStorage;
-import net.minecraft.client.font.Glyph;
-import net.minecraft.client.font.GlyphRenderer;
-import net.minecraft.client.font.GlyphRenderer.Rectangle;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Matrix4f;
-
 import grondag.fonthack.ext.FontManagerExt;
 import grondag.fonthack.ext.MinecraftClientExt;
 
@@ -62,23 +59,23 @@ public class McMdRenderer {
 	public static final String STR_HALF_NEWLINE = Character.toString(NEWLINE_PLUS_HALF);
 
 	private final FontAdapter adapter;
-	private final List<Rectangle> rects = Lists.newArrayList();
-	protected final FontStorage fontStorage;
-	final TextRenderer vanillaRenderer;
+	private final List<Effect> rects = Lists.newArrayList();
+	protected final FontSet fontStorage;
+	final Font vanillaRenderer;
 
 	final McMdStyle style;
 
 	@SuppressWarnings("resource")
 	public McMdRenderer(
 	McMdStyle style,
-	Identifier baseFont)
+	ResourceLocation baseFont)
 	{
 		this.style = style;
-		fontStorage = ((FontManagerExt)((MinecraftClientExt)MinecraftClient.getInstance()).ext_fontManager()).ext_getFontStorage(baseFont);
+		fontStorage = ((FontManagerExt)((MinecraftClientExt)Minecraft.getInstance()).ext_fontManager()).ext_getFontStorage(baseFont);
 
 		adapter = new FontAdapter();
 
-		vanillaRenderer = MinecraftClient.getInstance().textRenderer;
+		vanillaRenderer = Minecraft.getInstance().font;
 	}
 
 	class LineBreaker {
@@ -205,18 +202,18 @@ public class McMdRenderer {
 	}
 
 	class FontAdapter {
-		final Tessellator tess = Tessellator.getInstance();
-		final float adv = fontStorage.getGlyph(' ').getAdvance();
+		final Tesselator tess = Tesselator.getInstance();
+		final float adv = fontStorage.getGlyphInfo(' ').getAdvance();
 		final float indentWidth = adv * 4;
-		protected Identifier lastGlyphTexture = null;
+		protected ResourceLocation lastGlyphTexture = null;
 
 		// hack for TTF being generally thinner
 		final float boldOffset = adv / 8f;
 
-		public float draw(char c, char kernChar, boolean bold, boolean italic, float x, float y, float height, Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, float red, float green, float blue, float alpha, int light) {
-			final Glyph glyph = fontStorage.getGlyph(c);
-			final GlyphRenderer glyphRenderer = fontStorage.getGlyphRenderer(c);
-			final VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(glyphRenderer.getLayer(TextRenderer.TextLayerType.NORMAL));
+		public float draw(char c, char kernChar, boolean bold, boolean italic, float x, float y, float height, Matrix4f matrix4f, MultiBufferSource vertexConsumerProvider, float red, float green, float blue, float alpha, int light) {
+			final GlyphInfo glyph = fontStorage.getGlyphInfo(c);
+			final BakedGlyph glyphRenderer = fontStorage.getGlyph(c);
+			final VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(glyphRenderer.renderType(Font.DisplayMode.NORMAL));
 
 			//TODO: will need a custom renderlayer here to get correct blending
 			//			if (glyphTexture != null) {
@@ -229,9 +226,9 @@ public class McMdRenderer {
 			//					lastGlyphTexture = glyphTexture;
 			//				}
 
-			glyphRenderer.draw(italic, x, y, matrix4f, vertexConsumer, red, green, blue, alpha, light);
+			glyphRenderer.render(italic, x, y, matrix4f, vertexConsumer, red, green, blue, alpha, light);
 			if (bold) {
-				glyphRenderer.draw(italic, x + boldOffset, y, matrix4f, vertexConsumer, red, green, blue, alpha, light);
+				glyphRenderer.render(italic, x + boldOffset, y, matrix4f, vertexConsumer, red, green, blue, alpha, light);
 			}
 			//			}
 
@@ -239,11 +236,11 @@ public class McMdRenderer {
 		}
 
 		protected float getCharWidth(char kernChar, char c, boolean bold, boolean italic, float height) {
-			return fontStorage.getGlyph(c).getAdvance(bold);
+			return fontStorage.getGlyphInfo(c).getAdvance(bold);
 		}
 
 		protected float getCharWidth(char c, boolean bold, boolean italic, float height) {
-			return fontStorage.getGlyph(c).getAdvance(bold);
+			return fontStorage.getGlyphInfo(c).getAdvance(bold);
 		}
 
 		protected void reset() {
@@ -252,7 +249,7 @@ public class McMdRenderer {
 	}
 
 
-	public void drawMarkdown(Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, List<String> lines, float x, float y, int color, float yOffset, float height, int light) {
+	public void drawMarkdown(Matrix4f matrix4f, MultiBufferSource vertexConsumerProvider, List<String> lines, float x, float y, int color, float yOffset, float height, int light) {
 		// No longer supported in 1.17 - anything else needed?
 		//GlStateManager.enableAlphaTest();
 
@@ -273,8 +270,8 @@ public class McMdRenderer {
 		}
 	}
 
-	public void drawMarkdownInner(Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, List<String> lines, float x, final float yIn, int color, float yOffset, float height, int light) {
-		final boolean rightToLeft = vanillaRenderer.isRightToLeft();
+	public void drawMarkdownInner(Matrix4f matrix4f, MultiBufferSource vertexConsumerProvider, List<String> lines, float x, final float yIn, int color, float yOffset, float height, int light) {
+		final boolean rightToLeft = vanillaRenderer.isBidirectional();
 		final float baseX = x;
 		final float baseRed = ((color >> 16) & 255) / 255.0F;
 		final float baseGreen = ((color >> 8) & 255) / 255.0F;
@@ -293,7 +290,7 @@ public class McMdRenderer {
 		final float singleLine = style.lineHeight;
 		final float singleLinePlus = style.lineHeightPlusHalf;
 		final float indentWidth = adapter.indentWidth;
-		final List<Rectangle> rects = this.rects;
+		final List<Effect> rects = this.rects;
 		rects.clear();
 
 		float y = yIn - yOffset;
@@ -310,7 +307,7 @@ public class McMdRenderer {
 
 		for (String text : lines) {
 			if (rightToLeft) {
-				text = vanillaRenderer.mirror(text);
+				text = vanillaRenderer.bidirectionalShaping(text);
 			}
 
 			for(int i = 0; i < text.length(); ++i) {
@@ -362,12 +359,12 @@ public class McMdRenderer {
 
 					case INDENT_PLUS:
 						++indent;
-						margin = indent * indentWidth * (vanillaRenderer.isRightToLeft() ? -1 : 1);
+						margin = indent * indentWidth * (vanillaRenderer.isBidirectional() ? -1 : 1);
 						break;
 
 					case INDENT_MINUS:
 						--indent;
-						margin = indent * indentWidth * (vanillaRenderer.isRightToLeft() ? -1 : 1);
+						margin = indent * indentWidth * (vanillaRenderer.isBidirectional() ? -1 : 1);
 						break;
 
 					case ALIGN_TO_INDENT:
@@ -392,11 +389,11 @@ public class McMdRenderer {
 							final float advance = c == ' ' ? style.space : adapter.draw(c, kernChar, bold > 0, italic > 0, margin + x, y, lineHeight, matrix4f, vertexConsumerProvider, red, green, blue, alpha, light);
 
 							if (strikethru > 0) {
-								rects.add(new Rectangle(margin + x, y + style.strikethroughY, margin + x + advance, y + style.strikethroughY - style.lineThickness, -0.01F, red, green, blue, alpha));
+								rects.add(new Effect(margin + x, y + style.strikethroughY, margin + x + advance, y + style.strikethroughY - style.lineThickness, -0.01F, red, green, blue, alpha));
 							}
 
 							if (underline > 0) {
-								rects.add(new Rectangle(margin + x, y + style.underlineY, margin + x + advance, y + style.underlineY - style.lineThickness, -0.01F, red, green, blue, alpha));
+								rects.add(new Effect(margin + x, y + style.underlineY, margin + x + advance, y + style.underlineY - style.lineThickness, -0.01F, red, green, blue, alpha));
 							}
 
 							x += advance;
@@ -413,11 +410,11 @@ public class McMdRenderer {
 		}
 
 		if (!rects.isEmpty()) {
-			final GlyphRenderer gr = fontStorage.getRectangleRenderer();
-			final VertexConsumer vc = vertexConsumerProvider.getBuffer(gr.getLayer(TextRenderer.TextLayerType.NORMAL));
+			final BakedGlyph gr = fontStorage.whiteGlyph();
+			final VertexConsumer vc = vertexConsumerProvider.getBuffer(gr.renderType(Font.DisplayMode.NORMAL));
 
-			for (final Rectangle r :rects) {
-				gr.drawRectangle(r, matrix4f, vc, light);
+			for (final Effect r :rects) {
+				gr.renderEffect(r, matrix4f, vc, light);
 			}
 		}
 	}

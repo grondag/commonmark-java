@@ -5,7 +5,7 @@ import org.apache.logging.log4j.Logger;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.minecraft.resource.ResourceType;
+import net.minecraft.server.packs.PackType;
 
 public class McMdClient implements ClientModInitializer {
 	public static final String MOD_ID = "mcmarkdown";
@@ -13,6 +13,6 @@ public class McMdClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
-		ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(MarkdownLoader.INSTANCE);
+		ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(MarkdownLoader.INSTANCE);
 	}
 }

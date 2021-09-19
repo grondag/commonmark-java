@@ -19,18 +19,15 @@ import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-
-import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.AffineTransformation;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Matrix4f;
-
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.math.Matrix4f;
+import com.mojang.math.Transformation;
 import grondag.fermion.gui.GuiUtil;
 import grondag.fermion.gui.ScreenRenderContext;
 import grondag.fermion.gui.control.AbstractControl;
@@ -57,7 +54,7 @@ public class MarkdownControl extends AbstractControl<MarkdownControl> {
 	protected int version;
 	final McMdRenderer mcmd;
 
-	public MarkdownControl(ScreenRenderContext renderContext, Supplier<Node> markdownSupplier, IntSupplier versionSupplier, Identifier baseFont) {
+	public MarkdownControl(ScreenRenderContext renderContext, Supplier<Node> markdownSupplier, IntSupplier versionSupplier, ResourceLocation baseFont) {
 		super(renderContext);
 		this.markdownSupplier = markdownSupplier;
 		this.versionSupplier = versionSupplier;
@@ -67,7 +64,7 @@ public class MarkdownControl extends AbstractControl<MarkdownControl> {
 	}
 
 	@Override
-	protected void drawContent(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+	protected void drawContent(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
 		final int v = versionSupplier.getAsInt();
 
 		if (isDirty || v != version) {
@@ -75,10 +72,10 @@ public class MarkdownControl extends AbstractControl<MarkdownControl> {
 			version = v;
 		}
 
-		final VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
-		mcmd.drawMarkdown(AffineTransformation.identity().getMatrix(), immediate, lines, left, top, 0, renderStart, height, mouseY);
-		immediate.draw();
-		drawScrollIfNeeded(matrixStack.peek().getModel());
+		final MultiBufferSource.BufferSource immediate = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
+		mcmd.drawMarkdown(Transformation.identity().getMatrix(), immediate, lines, left, top, 0, renderStart, height, mouseY);
+		immediate.endBatch();
+		drawScrollIfNeeded(matrixStack.last().pose());
 	}
 
 	protected void drawScrollIfNeeded(Matrix4f matrix) {
@@ -110,7 +107,7 @@ public class MarkdownControl extends AbstractControl<MarkdownControl> {
 	}
 
 	@Override
-	public void drawToolTip(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+	public void drawToolTip(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
 	}
 
 	@Override
@@ -133,7 +130,7 @@ public class MarkdownControl extends AbstractControl<MarkdownControl> {
 
 	protected void clamp() {
 		if (maxButtonOffset != 0) {
-			buttonOffset = MathHelper.clamp(buttonOffset, 0, maxButtonOffset);
+			buttonOffset = Mth.clamp(buttonOffset, 0, maxButtonOffset);
 			renderStart = maxRenderStart * buttonOffset / maxButtonOffset;
 		}
 	}
