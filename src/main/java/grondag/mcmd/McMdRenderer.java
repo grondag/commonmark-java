@@ -16,7 +16,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Matrix4f;
 import org.jetbrains.annotations.Nullable;
 import grondag.fonthack.ext.FontManagerExt;
-import grondag.fonthack.ext.MinecraftClientExt;
+import grondag.fonthack.ext.MinecraftExt;
 
 public class McMdRenderer {
 	//	char ESC = '§';
@@ -71,7 +71,7 @@ public class McMdRenderer {
 	ResourceLocation baseFont)
 	{
 		this.style = style;
-		fontStorage = ((FontManagerExt)((MinecraftClientExt)Minecraft.getInstance()).ext_fontManager()).ext_getFontStorage(baseFont);
+		fontStorage = ((FontManagerExt)((MinecraftExt)Minecraft.getInstance()).ext_fontManager()).ext_getFontStorage(baseFont);
 
 		adapter = new FontAdapter();
 
